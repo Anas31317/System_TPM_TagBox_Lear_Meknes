@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tag Box Lear — Technicien</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<h2 class="sr-only">Tag Box — Interface Technicien — Lear Corporation</h2>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-name">Lear Corporation</span>
+      <span class="logo-pipe">|</span>
+      <span class="logo-sub" id="t-zone">Tag Box — Vue Technicien</span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-info">
+        <i class="ti ti-user" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="user-matricule-label">Matricule : <strong>—</strong></span>
+        <span class="role-badge" id="role-badge">Technicien</span>
+      </div>
+      <button class="lang-btn" id="lang-btn" onclick="toggleLang()">
+        <i class="ti ti-language" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="lang-label">عربي</span>
+      </button>
+      <div class="clock-badge">
+        <i class="ti ti-clock" aria-hidden="true" style="font-size:14px; color:#C8102E;"></i>
+        <span id="live-clock">--:--:--</span>
+      </div>
+      <button class="logout-btn" onclick="TagBoxApp.logout()">
+        <i class="ti ti-logout-2" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="t-logout">Déconnexion</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="background:#fff; border-bottom: 0.5px solid #E0DDD5;">
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-open" onclick="showTab('open')">Tickets en cours</div>
+      <div class="nav-tab" id="tab-resolved" onclick="showTab('resolved')">Tickets résolus</div>
+    </div>
+  </div>
+
+  <div class="page page-wide">
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label" id="t-stat-total">Total ouverts</div>
+        <div class="stat-value blue" id="count-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="t-stat-sec">Sécurité</div>
+        <div class="stat-value red" id="count-sec">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="t-stat-mai">Maintenance</div>
+        <div class="stat-value orange" id="count-mai">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="t-stat-pro">Production</div>
+        <div class="stat-value green" id="count-pro">—</div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 1 : En cours ============ -->
+    <div id="view-open">
+      <div class="section-header">
+        <div style="display:flex; align-items:center;">
+          <span class="live-dot"></span>
+          <span class="section-title" id="t-section-open">Signalements en attente</span>
+        </div>
+        <div class="filter-row" id="filter-row-open">
+          <div class="filter-btn active" data-filter="tous" onclick="setFilter('open','tous',this)">Tous</div>
+          <div class="filter-btn" data-filter="sec" onclick="setFilter('open','sec',this)">Sécurité</div>
+          <div class="filter-btn" data-filter="mai" onclick="setFilter('open','mai',this)">Maintenance</div>
+          <div class="filter-btn" data-filter="pro" onclick="setFilter('open','pro',this)">Production</div>
+        </div>
+      </div>
+
+      <div class="ticket-list" id="ticket-list-open"></div>
+      <p class="empty-note" id="empty-open" style="display:none;"></p>
+    </div>
+
+    <!-- ============ TAB 2 : Résolus ============ -->
+    <div id="view-resolved" style="display:none;">
+      <div class="section-header">
+        <div style="display:flex; align-items:center;">
+          <span class="section-title" id="t-section-resolved">Signalements résolus</span>
+        </div>
+        <div class="filter-row" id="filter-row-resolved">
+          <div class="filter-btn active" data-filter="tous" onclick="setFilter('resolved','tous',this)">Tous</div>
+          <div class="filter-btn" data-filter="sec" onclick="setFilter('resolved','sec',this)">Sécurité</div>
+          <div class="filter-btn" data-filter="mai" onclick="setFilter('resolved','mai',this)">Maintenance</div>
+          <div class="filter-btn" data-filter="pro" onclick="setFilter('resolved','pro',this)">Production</div>
+        </div>
+      </div>
+
+      <div class="ticket-list" id="ticket-list-resolved"></div>
+      <p class="empty-note" id="empty-resolved" style="display:none;"></p>
+    </div>
+
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/mock-data.js"></script>
+<script>
+  // ---------- Session ----------
+  const session = TagBoxApp.requireSession('technicien');
+  TagBoxApp.startClock(['live-clock']);
+
+  let currentTab = 'open';
+  let currentFilters = { open: 'tous', resolved: 'tous' };
+
+  const typeMeta = () => ({
+    sec: { icon: 'ti-shield-exclamation', cls: 'sec', badge: 'badge-sec', label: TagBoxApp.t('badgeSec') },
+    mai: { icon: 'ti-tool', cls: 'mai', badge: 'badge-mai', label: TagBoxApp.t('badgeMai') },
+    pro: { icon: 'ti-settings-2', cls: 'pro', badge: 'badge-pro', label: TagBoxApp.t('badgePro') }
+  });
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- Stats ----------
+  async function refreshStats() {
+    const stats = await TagBoxAPI.getStats();
+    document.getElementById('count-total').textContent = stats.total;
+    document.getElementById('count-sec').textContent = stats.sec;
+    document.getElementById('count-mai').textContent = stats.mai;
+    document.getElementById('count-pro').textContent = stats.pro;
+  }
+
+  // ---------- Rendu d'une liste de tickets ----------
+  function renderTicketList(containerId, tickets, resolved) {
+    const t = TagBoxApp.t;
+    const list = document.getElementById(containerId);
+    const meta = typeMeta();
+    list.innerHTML = '';
+
+    tickets.forEach(ticket => {
+      const m = meta[ticket.type];
+      const el = document.createElement('div');
+      el.className = `ticket ${ticket.priorite}`;
+      el.dataset.type = ticket.type;
+      if (resolved) el.style.opacity = '0.6';
+
+      const dateLabel = ticket.date === todayStr() ? t('today') : ticket.date;
+
+      el.innerHTML = `
+        <div class="ticket-type-icon ${m.cls}"><i class="ti ${m.icon}" aria-hidden="true"></i></div>
+        <div class="ticket-body">
+          <div class="ticket-machine">${t('machineLabel')} ${ticket.machine} — ${t('matriculeShort')} ${ticket.matricule}</div>
+          <div class="ticket-desc">${escapeHtml(ticket.description)}</div>
+          <div class="ticket-meta">${dateLabel} ${t('at')} ${ticket.heure}</div>
+        </div>
+        <div class="ticket-right">
+          <span class="badge-type ${m.badge}">${m.label}</span>
+          ${resolved
+            ? `<button class="resolve-btn done"><i class="ti ti-check" aria-hidden="true"></i> ${t('resolved')}</button>`
+            : `<button class="resolve-btn" onclick="resolveTicket(${ticket.id}, this)"><i class="ti ti-check" aria-hidden="true"></i> ${t('resolve')}</button>`
+          }
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // ---------- Chargement des tickets ----------
+  async function loadOpenTickets() {
+    const t = TagBoxApp.t;
+    const filter = currentFilters.open;
+    const tickets = await TagBoxAPI.getTickets({ statut: 'ouvert', type: filter });
+    renderTicketList('ticket-list-open', tickets, false);
+
+    const empty = document.getElementById('empty-open');
+    if (tickets.length === 0) {
+      empty.textContent = t('noOpenTickets');
+      empty.style.display = '';
+    } else {
+      empty.style.display = 'none';
+    }
+  }
+
+  async function loadResolvedTickets() {
+    const t = TagBoxApp.t;
+    const filter = currentFilters.resolved;
+    const tickets = await TagBoxAPI.getTickets({ statut: 'resolu', type: filter });
+    renderTicketList('ticket-list-resolved', tickets, true);
+
+    const empty = document.getElementById('empty-resolved');
+    if (tickets.length === 0) {
+      empty.textContent = t('noResolvedTickets');
+      empty.style.display = '';
+    } else {
+      empty.style.display = 'none';
+    }
+  }
+
+  // ---------- Résolution d'un ticket ----------
+  async function resolveTicket(id, btn) {
+    if (btn.classList.contains('done')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+
+    try {
+      await TagBoxAPI.resolveTicket(id);
+      TagBoxApp.showToast(TagBoxApp.getLang() === 'ar' ? 'تم وضع علامة "محلول" على البلاغ.' : 'Ticket marqué résolu.', 'success');
+      await refreshStats();
+      await loadOpenTickets();
+    } catch (e) {
+      TagBoxApp.showToast('Erreur lors de la mise à jour.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${TagBoxApp.t('resolve')}`;
+    }
+  }
+
+  // ---------- Onglets ----------
+  function showTab(tab) {
+    currentTab = tab;
+    const isOpen = tab === 'open';
+    document.getElementById('tab-open').classList.toggle('active', isOpen);
+    document.getElementById('tab-resolved').classList.toggle('active', !isOpen);
+    document.getElementById('view-open').style.display = isOpen ? '' : 'none';
+    document.getElementById('view-resolved').style.display = isOpen ? 'none' : '';
+    if (isOpen) loadOpenTickets(); else loadResolvedTickets();
+  }
+
+  // ---------- Filtres ----------
+  function setFilter(tab, type, el) {
+    currentFilters[tab] = type;
+    const row = document.getElementById(tab === 'open' ? 'filter-row-open' : 'filter-row-resolved');
+    row.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    if (tab === 'open') loadOpenTickets(); else loadResolvedTickets();
+  }
+
+  // ---------- Traductions ----------
+  function applyTranslations() {
+    const t = TagBoxApp.t;
+    const lang = TagBoxApp.getLang();
+    const app = document.getElementById('app');
+    lang === 'ar' ? app.classList.add('ar') : app.classList.remove('ar');
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    document.getElementById('t-zone').textContent = t('zoneTechnicien');
+    document.getElementById('lang-label').textContent = t('langLabel');
+    document.getElementById('t-logout').textContent = t('logout');
+    document.getElementById('role-badge').textContent = t('technicien');
+    if (session && session.matricule) {
+      document.getElementById('user-matricule-label').innerHTML =
+        `${t('matriculeShort')} : <strong>${session.matricule}</strong>`;
+    }
+
+    document.getElementById('tab-open').textContent = t('tabEnCours');
+    document.getElementById('tab-resolved').textContent = t('tabResolus');
+
+    document.getElementById('t-stat-total').textContent = t('statTotal');
+    document.getElementById('t-stat-sec').textContent = t('statSec');
+    document.getElementById('t-stat-mai').textContent = t('statMai');
+    document.getElementById('t-stat-pro').textContent = t('statPro');
+
+    document.getElementById('t-section-open').textContent = t('sectionEnAttente');
+    document.getElementById('t-section-resolved').textContent = t('sectionResolus');
+
+    ['filter-row-open', 'filter-row-resolved'].forEach(rowId => {
+      const row = document.getElementById(rowId);
+      row.querySelector('[data-filter="tous"]').textContent = t('filterTous');
+      row.querySelector('[data-filter="sec"]').textContent = t('filterSec');
+      row.querySelector('[data-filter="mai"]').textContent = t('filterMai');
+      row.querySelector('[data-filter="pro"]').textContent = t('filterPro');
+    });
+
+    // Re-render des listes actives avec la nouvelle langue
+    if (currentTab === 'open') loadOpenTickets(); else loadResolvedTickets();
+  }
+
+  function toggleLang() {
+    const current = TagBoxApp.getLang();
+    TagBoxApp.setLang(current === 'fr' ? 'ar' : 'fr');
+    applyTranslations();
+  }
+
+  // ---------- Init ----------
+  refreshStats();
+  applyTranslations();
+</script>
+</body>
+</html>

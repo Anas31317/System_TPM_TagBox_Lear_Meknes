@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tag Box Lear — Opérateur</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<h2 class="sr-only">Tag Box — Interface Opérateur — Lear Corporation</h2>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-name">Lear Corporation</span>
+      <span class="logo-pipe">|</span>
+      <span class="logo-sub" id="t-zone">Tag Box — Zone Cutting</span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-info">
+        <i class="ti ti-user" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="user-matricule-label">Matricule : <strong>—</strong></span>
+        <span class="role-badge" id="role-badge">Opérateur</span>
+      </div>
+      <button class="lang-btn" id="lang-btn" onclick="toggleLang()">
+        <i class="ti ti-language" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="lang-label">عربي</span>
+      </button>
+      <div class="clock-badge">
+        <i class="ti ti-clock" aria-hidden="true" style="font-size:14px; color:#C8102E;"></i>
+        <span id="live-clock">--:--:--</span>
+      </div>
+      <button class="logout-btn" onclick="TagBoxApp.logout()">
+        <i class="ti ti-logout-2" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="t-logout">Déconnexion</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="background:#fff; border-bottom: 0.5px solid #E0DDD5;">
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-new" onclick="showTab('new')">Nouveau signalement</div>
+      <div class="nav-tab" id="tab-mine" onclick="showTab('mine')">Mes signalements</div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 1 : Nouveau signalement ============ -->
+  <div class="page" id="view-new">
+    <p class="page-title" id="t-title">Signaler un problème</p>
+    <p class="page-sub" id="t-sub">Remplissez les informations ci-dessous. Le technicien sera notifié automatiquement.</p>
+
+    <div class="card">
+      <form id="ticket-form" novalidate>
+        <div class="field">
+          <label id="t-matricule">Matricule opérateur</label>
+          <input type="text" id="i-matricule" inputmode="numeric" placeholder="Ex : 04721" maxlength="6" />
+        </div>
+
+        <div class="field">
+          <label id="t-machine">Machine / Poste</label>
+          <select id="i-machine">
+            <option value="" id="t-select-default">— Sélectionner —</option>
+            <optgroup label="Zone A" id="optgroup-a"></optgroup>
+            <optgroup label="Zone B" id="optgroup-b"></optgroup>
+          </select>
+          <p class="field-error" id="err-machine"></p>
+        </div>
+
+        <div class="field">
+          <label id="t-date">Date et heure du signalement</label>
+          <div class="date-time-row">
+            <input type="date" id="date-input" />
+            <div class="readonly-field" id="time-display">--:--:--</div>
+          </div>
+          <p style="font-size:11px; color:#aaa; margin-top:5px;" id="t-date-note">L'heure est enregistrée automatiquement à l'envoi.</p>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="field">
+          <label id="t-type">Type de problème</label>
+          <div class="type-grid">
+            <div class="type-btn type-securite" data-type="sec" onclick="selectType(this)">
+              <i class="ti ti-shield-exclamation" aria-hidden="true"></i>
+              <span class="type-label" id="t-sec-label">Sécurité</span>
+              <span class="type-desc" id="t-sec-desc">Risque pour les personnes ou l'environnement</span>
+            </div>
+            <div class="type-btn type-maintenance" data-type="mai" onclick="selectType(this)">
+              <i class="ti ti-tool" aria-hidden="true"></i>
+              <span class="type-label" id="t-mai-label">Maintenance</span>
+              <span class="type-desc" id="t-mai-desc">Anomalie machine ou équipement</span>
+            </div>
+            <div class="type-btn type-production" data-type="pro" onclick="selectType(this)">
+              <i class="ti ti-settings-2" aria-hidden="true"></i>
+              <span class="type-label" id="t-pro-label">Production</span>
+              <span class="type-desc" id="t-pro-desc">Gêne ou écart sur le flux de fabrication</span>
+            </div>
+          </div>
+          <p class="field-error" id="err-type"></p>
+        </div>
+
+        <div class="field">
+          <label id="t-problem">Problème constaté</label>
+          <textarea id="i-problem" placeholder="Décrivez le problème observé sur votre poste..."></textarea>
+          <p class="field-error" id="err-problem"></p>
+        </div>
+
+        <button class="submit-btn" type="submit" id="submit-btn">
+          <i class="ti ti-send" aria-hidden="true" style="font-size:16px;"></i>
+          <span id="t-submit-text">Envoyer le signalement</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ TAB 2 : Mes signalements ============ -->
+  <div class="page" id="view-mine" style="display:none;">
+    <p class="page-title" id="t-my-title">Mes signalements</p>
+    <p class="page-sub" id="t-my-sub">Historique de vos signalements et leur statut.</p>
+
+    <div class="ticket-list" id="my-ticket-list">
+      <!-- généré dynamiquement -->
+    </div>
+    <p class="empty-note" id="my-empty" style="display:none;"></p>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/mock-data.js"></script>
+<script>
+  // ---------- Session ----------
+  const session = TagBoxApp.requireSession('operateur');
+
+  // ---------- Init ----------
+  const pad = n => String(n).padStart(2, '0');
+  TagBoxApp.startClock(['live-clock']);
+
+  function tickTimeDisplay() {
+    const now = new Date();
+    document.getElementById('time-display').textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  }
+  tickTimeDisplay();
+  setInterval(tickTimeDisplay, 1000);
+
+  document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+
+  // Pré-remplir le matricule depuis la session, le rendre lisible mais modifiable
+  if (session && session.matricule) {
+    document.getElementById('i-matricule').value = session.matricule;
+    document.getElementById('user-matricule-label').innerHTML =
+      `${TagBoxApp.t('matriculeShort')} : <strong>${session.matricule}</strong>`;
+  }
+
+  // Construire les options de machines depuis les ZONES (mock data)
+  function buildMachineOptions() {
+    const optA = document.getElementById('optgroup-a');
+    const optB = document.getElementById('optgroup-b');
+    optA.innerHTML = '';
+    optB.innerHTML = '';
+    TagBoxAPI.ZONES.A.forEach(m => optA.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+    TagBoxAPI.ZONES.B.forEach(m => optB.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+  }
+  buildMachineOptions();
+
+  // ---------- Onglets ----------
+  function showTab(tab) {
+    const isNew = tab === 'new';
+    document.getElementById('tab-new').classList.toggle('active', isNew);
+    document.getElementById('tab-mine').classList.toggle('active', !isNew);
+    document.getElementById('view-new').style.display = isNew ? '' : 'none';
+    document.getElementById('view-mine').style.display = isNew ? 'none' : '';
+    if (!isNew) loadMyTickets();
+  }
+
+  // ---------- Sélecteur de type ----------
+  let selectedType = null;
+  function selectType(el) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedType = el.dataset.type;
+    setFieldError('type', null);
+  }
+
+  // ---------- Validation ----------
+  function setFieldError(field, message) {
+    const errEl = document.getElementById(`err-${field}`);
+    if (!errEl) return;
+    if (message) {
+      errEl.textContent = message;
+      errEl.classList.add('visible');
+    } else {
+      errEl.classList.remove('visible');
+    }
+    if (field === 'machine') document.getElementById('i-machine').classList.toggle('invalid', !!message);
+    if (field === 'problem') document.getElementById('i-problem').classList.toggle('invalid', !!message);
+  }
+
+  // ---------- Soumission du formulaire ----------
+  document.getElementById('ticket-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const t = TagBoxApp.t;
+
+    const matricule = document.getElementById('i-matricule').value.trim();
+    const machine = document.getElementById('i-machine').value;
+    const problem = document.getElementById('i-problem').value.trim();
+
+    let valid = true;
+    if (!machine) { setFieldError('machine', t('errMachine')); valid = false; }
+    else setFieldError('machine', null);
+
+    if (!selectedType) { setFieldError('type', t('errType')); valid = false; }
+    else setFieldError('type', null);
+
+    if (!problem) { setFieldError('problem', t('errProblem')); valid = false; }
+    else setFieldError('problem', null);
+
+    if (!valid) return;
+
+    const btn = document.getElementById('submit-btn');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading-spinner"></span> <span>${t('sending')}</span>`;
+
+    const now = new Date();
+    const heure = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const date = document.getElementById('date-input').value || now.toISOString().split('T')[0];
+
+    try {
+      await TagBoxAPI.createTicket({ matricule, machine, type: selectedType, description: problem, date, heure });
+      TagBoxApp.showToast(t('successSent'), 'success');
+      resetForm();
+    } catch (err) {
+      TagBoxApp.showToast('Erreur lors de l\'envoi.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  });
+
+  function resetForm() {
+    document.getElementById('i-machine').value = '';
+    document.getElementById('i-problem').value = '';
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    selectedType = null;
+    setFieldError('machine', null);
+    setFieldError('type', null);
+    setFieldError('problem', null);
+  }
+
+  // ---------- Mes signalements ----------
+  async function loadMyTickets() {
+    const t = TagBoxApp.t;
+    const list = document.getElementById('my-ticket-list');
+    const empty = document.getElementById('my-empty');
+    list.innerHTML = '';
+
+    const tickets = await TagBoxAPI.getTickets({ matricule: session.matricule });
+
+    if (tickets.length === 0) {
+      empty.textContent = t('noTickets');
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const typeMeta = {
+      sec: { icon: 'ti-shield-exclamation', cls: 'sec', badge: 'badge-sec', label: t('badgeSec') },
+      mai: { icon: 'ti-tool', cls: 'mai', badge: 'badge-mai', label: t('badgeMai') },
+      pro: { icon: 'ti-settings-2', cls: 'pro', badge: 'badge-pro', label: t('badgePro') }
+    };
+
+    tickets.forEach(ticket => {
+      const meta = typeMeta[ticket.type];
+      const isResolved = ticket.statut === 'resolu';
+      const statusLabel = isResolved ? t('statusResolu') : t('statusOuvert');
+      const statusColor = isResolved ? 'var(--color-green)' : 'var(--lear-red)';
+
+      const el = document.createElement('div');
+      el.className = `ticket ${ticket.priorite}`;
+      el.style.cursor = 'default';
+      if (isResolved) el.style.opacity = '0.6';
+
+      el.innerHTML = `
+        <div class="ticket-type-icon ${meta.cls}"><i class="ti ${meta.icon}" aria-hidden="true"></i></div>
+        <div class="ticket-body">
+          <div class="ticket-machine">${t('machineLabel')} ${ticket.machine}</div>
+          <div class="ticket-desc">${escapeHtml(ticket.description)}</div>
+          <div class="ticket-meta">${ticket.date === todayStr() ? t('today') : ticket.date} ${t('at')} ${ticket.heure}</div>
+        </div>
+        <div class="ticket-right">
+          <span class="badge-type ${meta.badge}">${meta.label}</span>
+          <span style="font-size:11px; font-weight:500; color:${statusColor};">${statusLabel}</span>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- Traductions ----------
+  function applyTranslations() {
+    const t = TagBoxApp.t;
+    const lang = TagBoxApp.getLang();
+    const app = document.getElementById('app');
+    lang === 'ar' ? app.classList.add('ar') : app.classList.remove('ar');
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    document.getElementById('t-zone').textContent = t('zoneOperateur');
+    document.getElementById('lang-label').textContent = t('langLabel');
+    document.getElementById('t-logout').textContent = t('logout');
+    document.getElementById('role-badge').textContent = t('operateur');
+    if (session && session.matricule) {
+      document.getElementById('user-matricule-label').innerHTML =
+        `${t('matriculeShort')} : <strong>${session.matricule}</strong>`;
+    }
+
+    document.getElementById('tab-new').textContent = t('tab1');
+    document.getElementById('tab-mine').textContent = t('tab2');
+
+    document.getElementById('t-title').textContent = t('title');
+    document.getElementById('t-sub').textContent = t('sub');
+    document.getElementById('t-matricule').textContent = t('matricule');
+    document.getElementById('i-matricule').placeholder = t('matriculePh');
+    document.getElementById('t-machine').textContent = t('machine');
+    document.getElementById('t-select-default').textContent = t('selectDef');
+    document.getElementById('t-date').textContent = t('date');
+    document.getElementById('t-date-note').textContent = t('dateNote');
+    document.getElementById('t-type').textContent = t('type');
+    document.getElementById('t-sec-label').textContent = t('secLabel');
+    document.getElementById('t-sec-desc').textContent = t('secDesc');
+    document.getElementById('t-mai-label').textContent = t('maiLabel');
+    document.getElementById('t-mai-desc').textContent = t('maiDesc');
+    document.getElementById('t-pro-label').textContent = t('proLabel');
+    document.getElementById('t-pro-desc').textContent = t('proDesc');
+    document.getElementById('t-problem').textContent = t('problem');
+    document.getElementById('i-problem').placeholder = t('problemPh');
+    document.getElementById('t-submit-text').textContent = t('submit');
+
+    document.getElementById('t-my-title').textContent = t('myTicketsTitle');
+    document.getElementById('t-my-sub').textContent = t('myTicketsSub');
+
+    // Re-render des erreurs visibles et des tickets si onglet actif
+    setFieldError('machine', document.getElementById('err-machine').classList.contains('visible') ? t('errMachine') : null);
+    setFieldError('type', document.getElementById('err-type').classList.contains('visible') ? t('errType') : null);
+    setFieldError('problem', document.getElementById('err-problem').classList.contains('visible') ? t('errProblem') : null);
+
+    if (document.getElementById('view-mine').style.display !== 'none') {
+      loadMyTickets();
+    }
+  }
+
+  function toggleLang() {
+    const current = TagBoxApp.getLang();
+    TagBoxApp.setLang(current === 'fr' ? 'ar' : 'fr');
+    applyTranslations();
+  }
+
+  applyTranslations();
+</script>
+</body>
+</html>

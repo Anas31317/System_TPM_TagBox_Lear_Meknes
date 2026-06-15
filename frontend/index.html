@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tag Box Lear — Connexion</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    body { font-family: var(--font-sans); }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-dot"></div>
+      <span class="logo-name">Lear Corporation</span>
+    </div>
+    <p class="login-title" id="t-login-title">Connexion — Tag Box</p>
+
+    <div class="field">
+      <label id="t-login-label">Matricule</label>
+      <input type="text" id="i-matricule" inputmode="numeric" maxlength="6" placeholder="Ex : 04721" autocomplete="off" />
+      <p class="field-error" id="err-matricule"></p>
+    </div>
+
+    <button class="submit-btn" id="login-btn" onclick="handleLogin()">
+      <i class="ti ti-login-2" aria-hidden="true" style="font-size:16px;"></i>
+      <span id="t-login-btn">Se connecter</span>
+    </button>
+
+    <p class="login-hint" id="t-login-hint">
+      Saisissez votre matricule pour accéder à la Tag Box. Aucun mot de passe requis.
+    </p>
+
+    <div style="margin-top:1.5rem;">
+      <button class="lang-btn" id="lang-btn" onclick="toggleLang()" style="margin: 0 auto;">
+        <i class="ti ti-language" aria-hidden="true" style="font-size:14px;"></i>
+        <span id="lang-label">عربي</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/mock-data.js"></script>
+<script>
+  // Si une session existe déjà, redirection directe
+  (function () {
+    const session = TagBoxApp.getSession();
+    if (session) {
+      window.location.href = session.role === 'technicien' ? 'technicien.html' : 'operateur.html';
+    }
+  })();
+
+  function applyTranslations() {
+    const t = TagBoxApp.t;
+    const lang = TagBoxApp.getLang();
+    const wrap = document.getElementById('login-wrap');
+    lang === 'ar' ? wrap.classList.add('ar') : wrap.classList.remove('ar');
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+    document.getElementById('t-login-title').textContent = t('loginTitle');
+    document.getElementById('t-login-label').textContent = t('loginLabel');
+    document.getElementById('i-matricule').placeholder = t('loginPlaceholder');
+    document.getElementById('t-login-btn').textContent = t('loginBtn');
+    document.getElementById('t-login-hint').textContent = t('loginHint');
+    document.getElementById('lang-label').textContent = t('langLabel');
+  }
+
+  function toggleLang() {
+    const current = TagBoxApp.getLang();
+    TagBoxApp.setLang(current === 'fr' ? 'ar' : 'fr');
+    applyTranslations();
+  }
+
+  function setError(message) {
+    const errEl = document.getElementById('err-matricule');
+    const input = document.getElementById('i-matricule');
+    if (message) {
+      errEl.textContent = message;
+      errEl.classList.add('visible');
+      input.classList.add('invalid');
+    } else {
+      errEl.classList.remove('visible');
+      input.classList.remove('invalid');
+    }
+  }
+
+  async function handleLogin() {
+    const t = TagBoxApp.t;
+    const input = document.getElementById('i-matricule');
+    const matricule = input.value.trim();
+
+    if (!matricule) {
+      setError(t('loginErrorEmpty'));
+      return;
+    }
+    if (!/^\d{4,6}$/.test(matricule)) {
+      setError(t('loginErrorFormat'));
+      return;
+    }
+    setError(null);
+
+    const btn = document.getElementById('login-btn');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+
+    try {
+      const { user } = await TagBoxAPI.login(matricule);
+      TagBoxApp.setSession(user);
+      window.location.href = user.role === 'technicien' ? 'technicien.html' : 'operateur.html';
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+      TagBoxApp.showToast('Erreur de connexion. Réessayez.', 'error');
+    }
+  }
+
+  document.getElementById('i-matricule').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+  document.getElementById('i-matricule').addEventListener('input', () => setError(null));
+
+  applyTranslations();
+</script>
+</body>
+</html>
