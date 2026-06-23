@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tag Box Lear — Opérateur</title>
+  <link rel="icon" href="assets/lear_logo.png" type="image/png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <link rel="stylesheet" href="assets/style.css" />
 </head>
@@ -14,8 +15,7 @@
 <div class="app" id="app">
   <div class="topbar">
     <div class="logo">
-      <div class="logo-dot"></div>
-      <span class="logo-name">Lear Corporation</span>
+      <img src="assets/lear_logo.png" alt="Lear Corporation" class="logo-img" />
       <span class="logo-pipe">|</span>
       <span class="logo-sub" id="t-zone">Tag Box — Zone Cutting</span>
     </div>
@@ -121,6 +121,13 @@
     <p class="page-title" id="t-my-title">Mes signalements</p>
     <p class="page-sub" id="t-my-sub">Historique de vos signalements et leur statut.</p>
 
+    <div class="date-range-selector" style="margin-bottom: 1rem;">
+      <label id="t-date-from" for="my-tickets-date-from">De</label>
+      <input type="date" id="my-tickets-date-from" />
+      <label id="t-date-to" for="my-tickets-date-to">À</label>
+      <input type="date" id="my-tickets-date-to" />
+    </div>
+
     <div class="ticket-list" id="my-ticket-list">
       <!-- généré dynamiquement -->
     </div>
@@ -129,7 +136,7 @@
 </div>
 
 <script src="assets/app.js"></script>
-<script src="assets/mock-data.js"></script>
+<script src="assets/api.js"></script>
 <script>
   // ---------- Session ----------
   const session = TagBoxApp.requireSession('operateur');
@@ -155,14 +162,19 @@
       `${TagBoxApp.t('matriculeShort')} : <strong>${session.matricule}</strong>`;
   }
 
-  // Construire les options de machines depuis les ZONES (mock data)
-  function buildMachineOptions() {
+  // Construire les options de machines depuis l'API (table `machines`)
+  async function buildMachineOptions() {
     const optA = document.getElementById('optgroup-a');
     const optB = document.getElementById('optgroup-b');
     optA.innerHTML = '';
     optB.innerHTML = '';
-    TagBoxAPI.ZONES.A.forEach(m => optA.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
-    TagBoxAPI.ZONES.B.forEach(m => optB.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+    try {
+      const zones = await TagBoxAPI.getMachines();
+      (zones.A || []).forEach(m => optA.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+      (zones.B || []).forEach(m => optB.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+    } catch (e) {
+      TagBoxApp.showToast('Impossible de charger la liste des machines.', 'error');
+    }
   }
   buildMachineOptions();
 
@@ -173,11 +185,16 @@
     document.getElementById('tab-mine').classList.toggle('active', !isNew);
     document.getElementById('view-new').style.display = isNew ? '' : 'none';
     document.getElementById('view-mine').style.display = isNew ? 'none' : '';
-    if (!isNew) loadMyTickets();
+    if (!isNew) {
+      myTicketsDateFrom = document.getElementById('my-tickets-date-from').value;
+      myTicketsDateTo = document.getElementById('my-tickets-date-to').value;
+      loadMyTickets();
+    }
   }
 
   // ---------- Sélecteur de type ----------
   let selectedType = null;
+  // Gère la sélection du type d'anomalie (Sécurité, Maintenance, Production)
   function selectType(el) {
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -252,13 +269,33 @@
   }
 
   // ---------- Mes signalements ----------
+  let myTicketsDateFrom = null;
+  let myTicketsDateTo = null;
+
+  // Charge et affiche les signalements de l'opérateur connecté
+  // Logique :
+  //   1. Récupérer tous les tickets de cet opérateur (matricule depuis session)
+  //   2. Filtrer par plage de dates si une plage est sélectionnée
+  //   3. Afficher avec statut (En cours / Résolu) - pas d'actions possibles, lecture seule
   async function loadMyTickets() {
     const t = TagBoxApp.t;
     const list = document.getElementById('my-ticket-list');
     const empty = document.getElementById('my-empty');
     list.innerHTML = '';
 
-    const tickets = await TagBoxAPI.getTickets({ matricule: session.matricule });
+    let tickets;
+    try {
+      // Récupérer tous les tickets de cet opérateur (session.matricule)
+      tickets = await TagBoxAPI.getTickets({ matricule: session.matricule });
+    } catch (e) {
+      TagBoxApp.showToast('Impossible de charger vos signalements.', 'error');
+      return;
+    }
+
+    // Filtrer par plage de dates en client-side
+    if (myTicketsDateFrom && myTicketsDateTo) {
+      tickets = tickets.filter(t => t.date >= myTicketsDateFrom && t.date <= myTicketsDateTo);
+    }
 
     if (tickets.length === 0) {
       empty.textContent = t('noTickets');
@@ -353,6 +390,13 @@
     document.getElementById('t-my-title').textContent = t('myTicketsTitle');
     document.getElementById('t-my-sub').textContent = t('myTicketsSub');
 
+    // Traductions des sélecteurs de date (Mes signalements)
+    const myDateLabels = document.querySelectorAll('#view-mine .date-range-selector label');
+    if (myDateLabels.length >= 2) {
+      myDateLabels[0].textContent = t('dateFrom');
+      myDateLabels[1].textContent = t('dateTo');
+    }
+
     // Re-render des erreurs visibles et des tickets si onglet actif
     setFieldError('machine', document.getElementById('err-machine').classList.contains('visible') ? t('errMachine') : null);
     setFieldError('type', document.getElementById('err-type').classList.contains('visible') ? t('errType') : null);
@@ -369,6 +413,33 @@
     applyTranslations();
   }
 
+  // ---------- Init date range for "Mes signalements" ----------
+  function initMyTicketsDateRange() {
+    const today = todayStr();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+
+    myTicketsDateFrom = sevenDaysAgoStr;
+    myTicketsDateTo = today;
+
+    document.getElementById('my-tickets-date-from').value = sevenDaysAgoStr;
+    document.getElementById('my-tickets-date-to').value = today;
+
+    document.getElementById('my-tickets-date-from').addEventListener('change', () => {
+      myTicketsDateFrom = document.getElementById('my-tickets-date-from').value;
+      myTicketsDateTo = document.getElementById('my-tickets-date-to').value;
+      if (myTicketsDateFrom && myTicketsDateTo) loadMyTickets();
+    });
+
+    document.getElementById('my-tickets-date-to').addEventListener('change', () => {
+      myTicketsDateFrom = document.getElementById('my-tickets-date-from').value;
+      myTicketsDateTo = document.getElementById('my-tickets-date-to').value;
+      if (myTicketsDateFrom && myTicketsDateTo) loadMyTickets();
+    });
+  }
+
+  initMyTicketsDateRange();
   applyTranslations();
 </script>
 </body>

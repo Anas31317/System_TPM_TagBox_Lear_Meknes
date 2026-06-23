@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tag Box Lear — Connexion</title>
+  <link rel="icon" href="assets/lear_logo.png" type="image/png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <link rel="stylesheet" href="assets/style.css" />
   <style>
@@ -13,27 +14,66 @@
 <body>
 
 <div class="login-wrap" id="login-wrap">
+  <div class="login-logo-container">
+    <img src="assets/lear_corporation_logo.png" alt="Lear Corporation" class="login-logo-img" />
+  </div>
+
   <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-dot"></div>
-      <span class="logo-name">Lear Corporation</span>
+
+    <!-- ============ VUE 1 : Sélection du profil ============ -->
+    <div id="view-role-select">
+      <p class="login-title" id="t-role-title">Qui êtes-vous ?</p>
+      <p class="login-sub" id="t-role-sub">Sélectionnez votre profil pour continuer.</p>
+
+      <div class="role-grid">
+        <div class="role-btn" onclick="selectRole('operateur')">
+          <i class="ti ti-user" aria-hidden="true"></i>
+          <span class="role-label" id="t-role-operateur">Opérateur</span>
+          <span class="role-desc" id="t-role-operateur-desc">Signaler un problème sur votre poste</span>
+        </div>
+        <div class="role-btn" onclick="selectRole('technicien')">
+          <i class="ti ti-tool" aria-hidden="true"></i>
+          <span class="role-label" id="t-role-technicien">Technicien</span>
+          <span class="role-desc" id="t-role-technicien-desc">Consulter et résoudre les signalements</span>
+        </div>
+        <div class="role-btn role-btn-wide" onclick="selectRole('chef_equipe')">
+          <i class="ti ti-clipboard-list" aria-hidden="true"></i>
+          <span class="role-label" id="t-role-chef_equipe">Chef d'équipe</span>
+          <span class="role-desc" id="t-role-chef_equipe-desc">Superviser les signalements et le plan d'action</span>
+        </div>
+      </div>
     </div>
-    <p class="login-title" id="t-login-title">Connexion — Tag Box</p>
 
-    <div class="field">
-      <label id="t-login-label">Matricule</label>
-      <input type="text" id="i-matricule" inputmode="numeric" maxlength="6" placeholder="Ex : 04721" autocomplete="off" />
-      <p class="field-error" id="err-matricule"></p>
+    <!-- ============ VUE 2 : Connexion ============ -->
+    <div id="view-login" style="display:none;">
+      <button class="back-btn" onclick="showRoleSelect()">
+        <i class="ti ti-arrow-left" aria-hidden="true"></i>
+        <span id="t-back">Retour</span>
+      </button>
+
+      <p class="login-title" id="t-login-title">Connexion</p>
+
+      <div class="field">
+        <label id="t-login-label">Matricule</label>
+        <input type="text" id="i-matricule" inputmode="numeric" maxlength="6" placeholder="Ex : 04721" autocomplete="off" />
+        <p class="field-error" id="err-matricule"></p>
+      </div>
+
+      <div class="field">
+        <label id="t-password-label">Mot de passe</label>
+        <input type="password" id="i-password" maxlength="20" placeholder="••••••" autocomplete="off" />
+        <p class="field-error" id="err-password"></p>
+      </div>
+
+      <button class="submit-btn" id="login-btn" onclick="handleLogin()">
+        <i class="ti ti-login-2" aria-hidden="true" style="font-size:16px;"></i>
+        <span id="t-login-btn">Se connecter</span>
+      </button>
+
+      <p class="login-hint" id="t-login-hint">
+        Saisissez votre matricule et votre mot de passe pour accéder à la Tag Box.
+      </p>
     </div>
-
-    <button class="submit-btn" id="login-btn" onclick="handleLogin()">
-      <i class="ti ti-login-2" aria-hidden="true" style="font-size:16px;"></i>
-      <span id="t-login-btn">Se connecter</span>
-    </button>
-
-    <p class="login-hint" id="t-login-hint">
-      Saisissez votre matricule pour accéder à la Tag Box. Aucun mot de passe requis.
-    </p>
 
     <div style="margin-top:1.5rem;">
       <button class="lang-btn" id="lang-btn" onclick="toggleLang()" style="margin: 0 auto;">
@@ -45,15 +85,18 @@
 </div>
 
 <script src="assets/app.js"></script>
-<script src="assets/mock-data.js"></script>
+<script src="assets/api.js"></script>
 <script>
   // Si une session existe déjà, redirection directe
   (function () {
     const session = TagBoxApp.getSession();
     if (session) {
-      window.location.href = session.role === 'technicien' ? 'technicien.html' : 'operateur.html';
+      window.location.href = TagBoxApp.homePage(session.role);
     }
   })();
+
+  let selectedRole = null;
+  const errorKeys = { matricule: null, password: null };
 
   function applyTranslations() {
     const t = TagBoxApp.t;
@@ -63,25 +106,66 @@
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-    document.getElementById('t-login-title').textContent = t('loginTitle');
+    document.getElementById('t-role-title').textContent = t('roleSelectTitle');
+    document.getElementById('t-role-sub').textContent = t('roleSelectSub');
+    document.getElementById('t-role-operateur').textContent = t('operateur');
+    document.getElementById('t-role-operateur-desc').textContent = t('roleOperateurDesc');
+    document.getElementById('t-role-technicien').textContent = t('technicien');
+    document.getElementById('t-role-technicien-desc').textContent = t('roleTechnicienDesc');
+    document.getElementById('t-role-chef_equipe').textContent = t('chef_equipe');
+    document.getElementById('t-role-chef_equipe-desc').textContent = t('roleChefEquipeDesc');
+    document.getElementById('t-back').textContent = t('backBtn');
+
     document.getElementById('t-login-label').textContent = t('loginLabel');
     document.getElementById('i-matricule').placeholder = t('loginPlaceholder');
+    document.getElementById('t-password-label').textContent = t('passwordLabel');
+    document.getElementById('i-password').placeholder = t('passwordPlaceholder');
     document.getElementById('t-login-btn').textContent = t('loginBtn');
     document.getElementById('t-login-hint').textContent = t('loginHint');
     document.getElementById('lang-label').textContent = t('langLabel');
+
+    document.getElementById('t-login-title').textContent = selectedRole
+      ? `${t('loginTitle')} — ${t(selectedRole)}`
+      : t('loginTitle');
+
+    // Re-render des erreurs visibles avec la nouvelle langue
+    setError('matricule', errorKeys.matricule);
+    setError('password', errorKeys.password);
   }
 
-  function toggleLang() {
-    const current = TagBoxApp.getLang();
-    TagBoxApp.setLang(current === 'fr' ? 'ar' : 'fr');
+  // ---------- Navigation entre les vues ----------
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById('view-role-select').style.display = 'none';
+    document.getElementById('view-login').style.display = '';
+    resetForm();
     applyTranslations();
+    document.getElementById('i-matricule').focus();
   }
 
-  function setError(message) {
-    const errEl = document.getElementById('err-matricule');
-    const input = document.getElementById('i-matricule');
-    if (message) {
-      errEl.textContent = message;
+  function showRoleSelect() {
+    selectedRole = null;
+    document.getElementById('view-login').style.display = 'none';
+    document.getElementById('view-role-select').style.display = '';
+    resetForm();
+  }
+
+  function resetForm() {
+    document.getElementById('i-matricule').value = '';
+    document.getElementById('i-password').value = '';
+    setError('matricule', null);
+    setError('password', null);
+  }
+
+  // ---------- Erreurs de champ ----------
+  // `key` est une clé de traduction (ex: 'loginErrorEmpty'), pour pouvoir
+  // ré-afficher le bon message si la langue change ensuite.
+  function setError(field, key) {
+    const errEl = document.getElementById(`err-${field}`);
+    const input = document.getElementById(`i-${field}`);
+    errorKeys[field] = key;
+    if (key) {
+      errEl.textContent = TagBoxApp.t(key);
       errEl.classList.add('visible');
       input.classList.add('invalid');
     } else {
@@ -90,20 +174,33 @@
     }
   }
 
+  // ---------- Connexion ----------
   async function handleLogin() {
-    const t = TagBoxApp.t;
-    const input = document.getElementById('i-matricule');
-    const matricule = input.value.trim();
+    const matriculeInput = document.getElementById('i-matricule');
+    const passwordInput = document.getElementById('i-password');
+    const matricule = matriculeInput.value.trim();
+    const password = passwordInput.value;
+
+    let valid = true;
 
     if (!matricule) {
-      setError(t('loginErrorEmpty'));
-      return;
+      setError('matricule', 'loginErrorEmpty');
+      valid = false;
+    } else if (!/^\d{4,6}$/.test(matricule)) {
+      setError('matricule', 'loginErrorFormat');
+      valid = false;
+    } else {
+      setError('matricule', null);
     }
-    if (!/^\d{4,6}$/.test(matricule)) {
-      setError(t('loginErrorFormat'));
-      return;
+
+    if (!password) {
+      setError('password', 'loginErrorPasswordEmpty');
+      valid = false;
+    } else {
+      setError('password', null);
     }
-    setError(null);
+
+    if (!valid) return;
 
     const btn = document.getElementById('login-btn');
     const originalContent = btn.innerHTML;
@@ -111,9 +208,15 @@
     btn.innerHTML = '<span class="loading-spinner"></span>';
 
     try {
-      const { user } = await TagBoxAPI.login(matricule);
+      const { ok, user } = await TagBoxAPI.login(matricule, password, selectedRole);
+      if (!ok) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        setError('password', 'loginErrorCredentials');
+        return;
+      }
       TagBoxApp.setSession(user);
-      window.location.href = user.role === 'technicien' ? 'technicien.html' : 'operateur.html';
+      window.location.href = TagBoxApp.homePage(user.role);
     } catch (e) {
       btn.disabled = false;
       btn.innerHTML = originalContent;
@@ -121,10 +224,17 @@
     }
   }
 
-  document.getElementById('i-matricule').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleLogin();
+  function toggleLang() {
+    const current = TagBoxApp.getLang();
+    TagBoxApp.setLang(current === 'fr' ? 'ar' : 'fr');
+    applyTranslations();
+  }
+
+  ['i-matricule', 'i-password'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+    el.addEventListener('input', () => setError(id.replace('i-', ''), null));
   });
-  document.getElementById('i-matricule').addEventListener('input', () => setError(null));
 
   applyTranslations();
 </script>
