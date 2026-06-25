@@ -10,27 +10,39 @@ const TagBoxApp = (function () {
   const LANG_KEY = 'tagbox_lang';
 
   // ---------- Session ----------
+  // Gestion de la session utilisateur via sessionStorage (effacée à la fermeture du navigateur)
 
+  // Stocke l'utilisateur connecté sous forme JSON (matricule, nom, rôle)
   function setSession(user) {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   }
 
+  // Récupère la session actuelle ou null si pas connecté
   function getSession() {
     try {
       return JSON.parse(sessionStorage.getItem(SESSION_KEY));
     } catch (e) {
-      return null;
+      return null;  // JSON invalide ou vide
     }
   }
 
+  // Efface la session (utilisé par logout)
   function clearSession() {
     sessionStorage.removeItem(SESSION_KEY);
   }
 
-  /**
-   * Protège une page : redirige vers index.html si pas de session,
-   * ou si le rôle ne correspond pas à celui attendu.
-   */
+  // Retourne l'URL de la page d'accueil selon le rôle
+  // Utile pour les redirections après login ou lors de changement de rôle
+  function homePage(role) {
+    if (role === 'technicien') return 'technicien.html';
+    if (role === 'chef_equipe') return 'chef_equipe.html';
+    return 'operateur.html';  // Défaut : opérateur
+  }
+
+  // Vérifie que l'utilisateur est connecté et que son rôle correspond à la page demandée
+  // Appelée au début de chaque page HTML pour protéger l'accès
+  // Si pas de session → redirect vers login (index.html)
+  // Si rôle ne correspond pas → redirect vers la bonne page du rôle
   function requireSession(expectedRole) {
     const session = getSession();
     if (!session) {
@@ -38,7 +50,7 @@ const TagBoxApp = (function () {
       return null;
     }
     if (expectedRole && session.role !== expectedRole) {
-      window.location.href = session.role === 'technicien' ? 'technicien.html' : 'operateur.html';
+      window.location.href = homePage(session.role);
       return null;
     }
     return session;
@@ -100,43 +112,57 @@ const TagBoxApp = (function () {
       // Topbar / commun
       zoneOperateur: 'Tag Box — Zone Cutting',
       zoneTechnicien: 'Tag Box — Vue Technicien',
+      zoneChefEquipe: 'Tag Box — Vue Chef d\'équipe',
       langLabel: 'عربي',
       logout: 'Déconnexion',
       technicien: 'Technicien',
       operateur: 'Opérateur',
+      chef_equipe: 'Chef d\'équipe',
       matriculeShort: 'Matricule',
+
+      // Sélection du profil
+      roleSelectTitle: 'Qui êtes-vous ?',
+      roleSelectSub: 'Sélectionnez votre profil pour continuer.',
+      roleOperateurDesc: 'Signaler un problème sur votre poste',
+      roleTechnicienDesc: 'Consulter et résoudre les signalements',
+      roleChefEquipeDesc: "Superviser les signalements et alimenter le plan d'action",
+      backBtn: 'Retour',
 
       // Login
       loginTitle: 'Connexion',
       loginLabel: 'Matricule',
       loginPlaceholder: 'Ex : 04721',
+      passwordLabel: 'Mot de passe',
+      passwordPlaceholder: '••••••',
       loginBtn: 'Se connecter',
-      loginHint: "Saisissez votre matricule pour accéder à la Tag Box. Aucun mot de passe requis.",
+      loginHint: "Saisissez votre matricule et votre mot de passe pour accéder à la Tag Box.",
       loginErrorEmpty: 'Veuillez saisir votre matricule.',
       loginErrorFormat: 'Le matricule doit contenir 5 chiffres.',
+      loginErrorPasswordEmpty: 'Veuillez saisir votre mot de passe.',
+      loginErrorCredentials: 'Matricule ou mot de passe incorrect.',
 
       // Opérateur - tabs
       tab1: 'Nouveau signalement',
       tab2: 'Mes signalements',
 
       // Opérateur - formulaire
-      title: 'Signaler un problème',
+      title: 'Signaler une anomalie',
       sub: 'Remplissez les informations ci-dessous. Le technicien sera notifié automatiquement.',
       matricule: 'Matricule opérateur',
       matriculePh: 'Ex : 04721',
-      machine: 'Machine / Poste',
+      machine: 'Machine',
       selectDef: '— Sélectionner —',
       date: 'Date et heure du signalement',
       dateNote: "L'heure est enregistrée automatiquement à l'envoi.",
-      type: 'Type de problème',
+      type: 'Type d\'anomalie',
       secLabel: 'Sécurité',
       secDesc: "Risque pour les personnes ou l'environnement",
       maiLabel: 'Maintenance',
       maiDesc: 'Anomalie machine ou équipement',
       proLabel: 'Production',
       proDesc: 'Gêne ou écart sur le flux de fabrication',
-      problem: 'Problème constaté',
-      problemPh: 'Décrivez le problème observé sur votre poste...',
+      problem: 'Anomalies Constatées',
+      problemPh: 'Décrivez les anomalies constatées...',
       submit: 'Envoyer le signalement',
       sending: 'Envoi en cours...',
 
@@ -175,45 +201,100 @@ const TagBoxApp = (function () {
       machineLabel: 'Machine',
       badgeSec: 'Sécurité',
       badgeMai: 'Maintenance',
-      badgePro: 'Production'
+      badgePro: 'Production',
+
+      // Modal de résolution
+      resolveModalTitle: 'Marquer comme résolu',
+      actionEffectueeLabel: 'Action effectuée (optionnel)',
+      actionEffectueePh: "Décrivez l'intervention réalisée...",
+      actionEffectueeShort: 'Action effectuée',
+      cancel: 'Annuler',
+      confirm: 'Confirmer',
+
+      // Chef d'équipe
+      resolvedBy: 'Résolu par',
+
+      // Chef d'équipe — Analyse
+      tabAnalyse: 'Analyse',
+      sectionAnalyse: 'Suivi des interventions',
+      chartEvolutionTitle: 'Évolution des interventions',
+      chartTypesTitle: 'Répartition par type (tickets résolus)',
+      seriesSignales: 'Signalés',
+      seriesResolus: 'Résolus',
+      tableMachinesTitle: 'Machines à surveiller',
+      tableTechsTitle: 'Charge par technicien',
+      colTotal: 'Total',
+      colTicketsResolus: 'Tickets résolus',
+      noAnalyticsData: 'Pas encore assez de données pour cette analyse.',
+      range7: '7 jours',
+      range14: '14 jours',
+      range1m: '1 mois',
+      range3m: '3 mois',
+      range6m: '6 mois',
+
+      // Filtres date
+      dateFrom: 'De',
+      dateTo: 'À',
+      filterByDate: 'Filtrer par date',
+      noDataToExport: 'Aucune donnée à exporter.',
+      csvType: 'Type',
+      description: 'Description',
+      csvDate: 'Date signalement',
+      csvHeure: 'Heure signalement',
+      csvMatriculeOp: 'Matricule opérateur',
+      csvDateResolution: 'Date résolution',
+      csvHeureResolution: 'Heure résolution'
     },
     ar: {
       zoneOperateur: 'صندوق البطاقات — قسم القطع',
       zoneTechnicien: 'صندوق البطاقات — واجهة الفني',
+      zoneChefEquipe: 'صندوق البطاقات — واجهة رئيس الفريق',
       langLabel: 'Français',
       logout: 'تسجيل الخروج',
       technicien: 'فني',
       operateur: 'عامل',
+      chef_equipe: 'رئيس الفريق',
       matriculeShort: 'رقم الموظف',
+
+      roleSelectTitle: 'من أنت؟',
+      roleSelectSub: 'اختر ملفك الشخصي للمتابعة.',
+      roleOperateurDesc: 'الإبلاغ عن مشكلة في محطتك',
+      roleTechnicienDesc: 'عرض البلاغات وحلها',
+      roleChefEquipeDesc: 'متابعة البلاغات وتغذية خطة العمل',
+      backBtn: 'رجوع',
 
       loginTitle: 'تسجيل الدخول',
       loginLabel: 'رقم الموظف',
       loginPlaceholder: 'مثال : 04721',
+      passwordLabel: 'كلمة المرور',
+      passwordPlaceholder: '••••••',
       loginBtn: 'تسجيل الدخول',
-      loginHint: 'أدخل رقم موظفك للوصول إلى صندوق البطاقات. لا حاجة لكلمة مرور.',
+      loginHint: 'أدخل رقم موظفك وكلمة المرور للوصول إلى صندوق البطاقات.',
       loginErrorEmpty: 'يرجى إدخال رقم الموظف.',
       loginErrorFormat: 'يجب أن يتكون رقم الموظف من 5 أرقام.',
+      loginErrorPasswordEmpty: 'يرجى إدخال كلمة المرور.',
+      loginErrorCredentials: 'رقم الموظف أو كلمة المرور غير صحيحة.',
 
       tab1: 'إبلاغ جديد',
       tab2: 'بلاغاتي',
 
-      title: 'الإبلاغ عن مشكلة',
+      title: 'الإبلاغ عن أعطال',
       sub: 'يرجى ملء المعلومات أدناه. سيتم إخطار الفني تلقائياً.',
       matricule: 'رقم الموظف',
       matriculePh: 'مثال : 04721',
-      machine: 'الآلة / المحطة',
+      machine: 'الآلة',
       selectDef: '— اختر —',
       date: 'تاريخ ووقت الإبلاغ',
       dateNote: 'يتم تسجيل الوقت تلقائياً عند الإرسال.',
-      type: 'نوع المشكلة',
+      type: 'نوع العطل',
       secLabel: 'السلامة',
       secDesc: 'خطر على الأشخاص أو البيئة',
       maiLabel: 'الصيانة',
       maiDesc: 'خلل في الآلة أو المعدات',
       proLabel: 'الإنتاج',
       proDesc: 'عائق أو انحراف في خط التصنيع',
-      problem: 'المشكلة الملاحظة',
-      problemPh: 'صف المشكلة التي لاحظتها على محطتك...',
+      problem: 'الأعطال المكتشفة',
+      problemPh: 'صف الأعطال المكتشفة على محطتك...',
       submit: 'إرسال البلاغ',
       sending: 'جاري الإرسال...',
 
@@ -249,7 +330,48 @@ const TagBoxApp = (function () {
       machineLabel: 'الآلة',
       badgeSec: 'السلامة',
       badgeMai: 'الصيانة',
-      badgePro: 'الإنتاج'
+      badgePro: 'الإنتاج',
+
+      resolveModalTitle: 'وضع علامة "محلول"',
+      actionEffectueeLabel: 'الإجراء المتخذ (اختياري)',
+      actionEffectueePh: 'صف التدخل الذي قمت به...',
+      actionEffectueeShort: 'الإجراء المتخذ',
+      cancel: 'إلغاء',
+      confirm: 'تأكيد',
+
+      resolvedBy: 'تم الحل من طرف',
+
+      tabAnalyse: 'تحليل',
+      sectionAnalyse: 'تتبع التدخلات',
+      chartEvolutionTitle: 'تطور التدخلات',
+      chartTypesTitle: 'التوزيع حسب النوع (البلاغات المحلولة)',
+      seriesSignales: 'المعلنة',
+      seriesResolus: 'المحلولة',
+      tableMachinesTitle: 'الآلات التي تستوجب المراقبة',
+      tableTechsTitle: 'توزيع العمل على الفنيين',
+      colTotal: 'الإجمالي',
+      colTicketsResolus: 'البلاغات المحلولة',
+      noAnalyticsData: 'لا توجد بيانات كافية لهذا التحليل حتى الآن.',
+      range7: '7 أيام',
+      range14: '14 يوماً',
+      range1m: 'شهر واحد',
+      range3m: '3 أشهر',
+      range6m: '6 أشهر',
+
+      // رئيس الفريق — تصدير CSV
+      exportCsv: 'تصدير CSV',
+      // مرشحات التاريخ
+      dateFrom: 'من',
+      dateTo: 'إلى',
+      filterByDate: 'تصفية حسب التاريخ',
+      noDataToExport: 'لا توجد بيانات للتصدير.',
+      csvType: 'النوع',
+      description: 'الوصف',
+      csvDate: 'تاريخ البلاغ',
+      csvHeure: 'وقت البلاغ',
+      csvMatriculeOp: 'رقم موظف العامل',
+      csvDateResolution: 'تاريخ الحل',
+      csvHeureResolution: 'وقت الحل'
     }
   };
 
@@ -259,7 +381,7 @@ const TagBoxApp = (function () {
   }
 
   return {
-    setSession, getSession, clearSession, requireSession, logout,
+    setSession, getSession, clearSession, requireSession, logout, homePage,
     getLang, setLang,
     startClock,
     showToast,
