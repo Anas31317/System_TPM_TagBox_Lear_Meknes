@@ -1,0 +1,283 @@
+================================================================================
+RÉSUMÉ DU PROJET TAG BOX — NUMÉRISATION ET DÉVELOPPEMENT TPM
+Lear Corporation, Meknès — Stage Ingénieur ICAM Toulouse
+================================================================================
+
+1. CONTEXTE DU STAGE
+================================================================================
+
+Stagiaire : Anas (3ème année ICAM Toulouse, bac+5)
+Entreprise : Lear Corporation, usine de Meknès, Maroc
+Encadrant : Tarik El Amine
+Durée : ~18 semaines (9 semaines restantes)
+Sujet : Développement TPM — Certification Silver Level JIPM
+
+Progression actuelle :
+- 3 premières semaines : analyse approfondie de l'usine (opérateurs, techniciens, 
+  machines, pannes)
+- Prochaines 9 semaines : développement du sujet principal + mission complémentaire 
+  possible
+
+
+2. LE SYSTÈME TAG BOX ACTUEL
+================================================================================
+
+Localisation : Zone Cutting de Lear Corporation
+
+Description physique :
+- 5 boîtes de signalement (Tag Box) positionnées à des points stratégiques et 
+  accessibles
+- Étiquettes plastifiées réutilisables (écrites au marqueur par l'opérateur)
+- Une fois le problème résolu par le technicien, l'étiquette est effacée
+
+Rôles et responsabilités :
+- OPÉRATEUR : constate un problème, remplit une étiquette et la place dans la Tag Box
+- TECHNICIEN : consulte les box en permanence, résout les problèmes
+- CHEF D'ÉQUIPE : reçoit les remontées du technicien, enregistre dans le plan 
+  d'action
+
+Type de problèmes remontés :
+- Sécurité (risques pour les personnes ou l'environnement)
+- Maintenance (anomalies machines/équipements)
+- Production (gênes ou écarts sur le flux de fabrication)
+- Important : ce sont des problèmes NON BLOQUANTS ou peu impactants sur la production
+
+Données enregistrées sur chaque étiquette :
+1. Matricule de l'opérateur
+2. Machine / Poste (A01-A16, B01-B16 pour commencer)
+3. Date du signalement (toujours modifiable)
+4. Type de problème (Sécurité / Maintenance / Production)
+5. Description du problème constaté
+
+Historique :
+- Système mis en place en février 2026 (récent)
+- Avant : aucun système formalisé de remontée de problèmes
+
+
+3. SUJET DU STAGE : DÉVELOPPEMENT ET NUMÉRISATION
+================================================================================
+
+Objectif général :
+Transformer le système Tag Box artisanal (marqueur sur plastique) en une solution 
+numérique complète, automatisée et traçable, tout en conservant la simplicité d'usage 
+sur le terrain.
+
+Contraintes acceptées :
+- Pas de contrainte technique particulière
+- Budget disponible pour du matériel (écrans tactiles)
+- Collaboration avec le département IT de Lear pour l'hébergement et la sécurité 
+  des données
+
+Points clés :
+- Pas de tablettes disponibles pour les opérateurs
+- Solution : écrans tactiles fixes positionnés à la place des 5 Tag Box actuelles
+- Le chef d'équipe conserve son PC avec Excel (formulaire existant)
+- Nécessité d'authentification par matricule (opérateurs, techniciens, chefs d'équipe)
+- Interface disponible en français ET en arabe (contexte Meknès, emplois marocains)
+
+
+4. ARCHITECTURE TECHNIQUE PROPOSÉE
+================================================================================
+
+Frontend :
+- HTML / CSS / JavaScript pour les interfaces
+- Deux vues principales :
+  a) Interface opérateur (écran tactile fixe en zone de cutting)
+  b) Interface technicien + chef d'équipe (vue ordinateurs/tableaux de bord)
+
+Backend :
+- Python + Flask (API léger et maintenable)
+- Raison du choix : plus lisible et logique que PHP, langage maîtrisé
+
+Base de données :
+- MySQL (PHPMyAdmin pour la gestion)
+- Hébergement : serveur local Lear Corporation (à confirmer avec IT)
+
+Structure de la base de données (esquisse) :
+- Table UTILISATEURS : matricule, nom, prénom, rôle (opérateur / technicien / 
+  chef d'équipe)
+- Table TICKETS : id, matricule_opérateur, machine, date_signalement, type_problème, 
+  description, statut (ouvert/résolu), date_résolution, matricule_technicien, 
+  action_effectuée
+- Table MACHINES : id, code (A01, B01, etc.), zone
+
+Options envisagées pour l'avenir :
+- Intégration de React pour le tableau de bord temps réel (si besoin d'une vue 
+  dynamique plus avancée)
+- API websocket pour les notifications en temps réel au technicien
+
+
+5. INTERFACE OPÉRATEUR (ÉCRAN TACTILE)
+================================================================================
+
+Principe de conception :
+- Sobre et lisible (blanc, crème clair, noir, rouge Lear Corporation)
+- Rapide (l'opérateur doit pouvoir remplir un formulaire en quelques secondes)
+- Bilingue français/arabe avec bouton de changement de langue visible
+
+Champs du formulaire (dans cet ordre) :
+1. Matricule opérateur — saisi manuellement (6 caractères max)
+2. Machine / Poste — liste déroulante (A01-A16, B01-B16 pour l'instant, extensible)
+3. Date — préremplie avec le jour, modifiable si besoin
+4. Heure — affichée en temps réel, enregistrée à l'envoi du ticket
+5. Type de problème — 3 boutons visuels avec icônes et descriptions courtes 
+   (Sécurité / Maintenance / Production)
+6. Problème constaté — champ texte libre pour la description
+
+Comportements :
+- L'horloge en haut à droite affiche l'heure exacte en continu
+- Les boutons de type de problème sont colorés et toujours visibles (pas de survol)
+- Bouton "Envoyer le signalement" en rouge Lear, texte blanc, très visible
+- Bouton changement de langue ("عربي" / "Français") rouge, toujours visible
+- Deuxième onglet "Mes signalements" (pas encore développé)
+
+Maquettes créées :
+- Version 7 (version stable) avec tous les correctifs de contraste et visibilité
+
+
+6. INTERFACE TECHNICIEN (VUE TABLEAU DE BORD)
+================================================================================
+
+Localisation : sur PC/écran dédié du technicien
+Authentification : par matricule
+
+Affichage principal :
+- Statistiques en temps réel (4 cartes) :
+  * Total de tickets ouverts
+  * Nombre par type (Sécurité / Maintenance / Production)
+  
+- Liste des tickets en attente avec :
+  * Icône de type (code couleur : rouge/orange/vert)
+  * Machine et matricule opérateur
+  * Description courte (truncaturée si long)
+  * Heure du signalement
+  * Badge de type
+  * Bouton "Résoudre" rouge
+
+Filtres :
+- Tous / Sécurité / Maintenance / Production (pour afficher les tickets par catégorie)
+
+Comportements :
+- Point vert animé pour indiquer la vue en temps réel
+- Au clic sur "Résoudre", le ticket change de statut (grisé et marqué comme "Résolu")
+- Les statistiques se mettent à jour automatiquement
+- Un deuxième onglet pour les "Tickets résolus" (pas encore développé)
+
+Maquettes créées :
+- Version 1 (stable) avec 4 tickets d'exemple
+
+
+7. FLUX DE TRAVAIL COMPLET
+================================================================================
+
+Séquence d'une remontée de problème :
+
+1. OPÉRATEUR (écran tactile en zone) :
+   - Se connecte avec son matricule
+   - Sélectionne sa machine
+   - Choisit le type de problème
+   - Décrit le problème
+   - Clique "Envoyer le signalement"
+   → Ticket créé dans la BD avec timestamp exact
+
+2. TECHNICIEN (son PC/écran) :
+   - Voit en temps réel l'apparition du nouveau ticket
+   - Lit la description
+   - Se rend sur la machine pour intervenir
+   - Une fois l'intervention terminée, clique "Résoudre"
+   → Statut du ticket = "résolu" + enregistrement de la date/heure de résolution
+
+3. CHEF D'ÉQUIPE (son PC Excel) :
+   - Les données du ticket alimentent automatiquement son plan d'action
+   - Peut voir l'historique complet des interventions
+   - Peut générer des rapports (types de problèmes récurrents, temps d'intervention, 
+     etc.)
+
+
+8. DONNÉES COLLECTÉES ET TRAÇABILITÉ
+================================================================================
+
+Pour chaque ticket enregistré :
+- Matricule de l'opérateur qui a signalé
+- Machine affectée
+- Date exacte et heure exacte du signalement
+- Type de problème (catégorie)
+- Description du problème
+- Statut (ouvert / résolu)
+- Matricule du technicien qui a résolu (optionnel, pour traçabilité)
+- Date et heure de résolution
+- Action effectuée (champ libre pour le technicien à compléter)
+
+Contrairement au système actuel (étiquette effacée, pas de trace), la numérisation 
+garantit :
+- Zéro perte de données
+- Traçabilité complète des problèmes et interventions
+- Historique exploitable pour le TPM (identification de problèmes récurrents, analyse 
+  OEE, etc.)
+
+
+9. AVANTAGES DE LA SOLUTION NUMÉRIQUE
+================================================================================
+
+Pour l'opérateur :
+- Plus rapide (écran tactile vs écrire au marqueur)
+- Moins d'erreurs (listes déroulantes vs saisie libre)
+- Interface intuitive et bilingue
+
+Pour le technicien :
+- Notifications immédiates des nouveaux problèmes
+- Priorisation possible (Sécurité > Maintenance > Production)
+- Historique consultable
+- Temps de recherche réduit (pas besoin de se déplacer jusqu'aux box)
+
+Pour le chef d'équipe et la direction TPM :
+- Plan d'action automatiquement alimenté
+- Données complètes pour analyse (MTTR, récurrence, tendances)
+- Support pour les audits Silver Level JIPM
+- Tableaux de bord et rapports générables
+
+Pour l'usine :
+- Meilleure traçabilité des problèmes
+- Amélioration continue mesurable
+- Base pour l'analyse d'OEE/TRS
+
+
+10. PLANNING ESTIMÉ
+================================================================================
+
+Les 9 semaines restantes du stage :
+
+Semaine 1-2 : Structure de la base de données et validation avec IT
+Semaine 2-3 : Backend Flask (API pour les tickets)
+Semaine 3-5 : Frontend opérateur (HTML/CSS/JS) + intégration BD
+Semaine 5-6 : Frontend technicien (tableau de bord)
+Semaine 6-7 : Tests intégrés et corrections
+Semaine 7-8 : Déploiement et formation utilisateurs
+Semaine 8-9 : Mission complémentaire (à définir avec Tarik)
+
+Note : si le développement avance plus vite que prévu, discussion avec Tarik sur 
+une mission complémentaire (améliorations supplémentaires, analyses TPM, 
+documentation, etc.)
+
+
+11. NOTES IMPORTANTES
+================================================================================
+
+Contexte terrain :
+- Stage en Afrique du Nord (Meknès, Maroc)
+- Interface bilingue indispensable pour l'accessibilité des opérateurs marocains
+- Horaires et environnement industriel (atelier bruyant, poussière)
+- Interface tactile doit être robuste et lisible à distance
+
+Prochaines étapes concrètes :
+- Valider la liste exacte des machines (jusqu'à A40 potentiellement)
+- Confirmer avec IT : serveur d'hébergement, accès réseau en zone cutting
+- Démarrer le développement de la base de données
+
+Livrables finaux :
+- Application web complète (opérateur + technicien + chef d'équipe)
+- Base de données MySQL prête à la production
+- Éventuels fichiers Excel/rapports pour le suivi TPM
+- Documentation technique pour l'IT de Lear
+
+================================================================================
