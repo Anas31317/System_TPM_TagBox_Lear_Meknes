@@ -63,8 +63,6 @@
           <label id="t-machine">Machine / Poste</label>
           <select id="i-machine">
             <option value="" id="t-select-default">— Sélectionner —</option>
-            <optgroup label="Zone A" id="optgroup-a"></optgroup>
-            <optgroup label="Zone B" id="optgroup-b"></optgroup>
           </select>
           <p class="field-error" id="err-machine"></p>
         </div>
@@ -164,14 +162,30 @@
 
   // Construire les options de machines depuis l'API (table `machines`)
   async function buildMachineOptions() {
-    const optA = document.getElementById('optgroup-a');
-    const optB = document.getElementById('optgroup-b');
-    optA.innerHTML = '';
-    optB.innerHTML = '';
+    const select = document.getElementById('i-machine');
+    select.querySelectorAll('optgroup').forEach(g => g.remove());
     try {
       const zones = await TagBoxAPI.getMachines();
-      (zones.A || []).forEach(m => optA.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
-      (zones.B || []).forEach(m => optB.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+      const zoneOrder = ['A', 'B', 'TW', 'Artos', 'Heavy'];
+      const sortedZones = Object.keys(zones).sort((a, b) => {
+        const ia = zoneOrder.indexOf(a);
+        const ib = zoneOrder.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+      sortedZones.forEach(zone => {
+        const group = document.createElement('optgroup');
+        group.label = `Zone ${zone}`;
+        zones[zone].forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          group.appendChild(opt);
+        });
+        select.appendChild(group);
+      });
     } catch (e) {
       TagBoxApp.showToast('Impossible de charger la liste des machines.', 'error');
     }

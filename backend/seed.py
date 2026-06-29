@@ -20,8 +20,11 @@ USERS = [
 ]
 
 MACHINES = (
-    [(f'A{n:02d}', 'A') for n in range(1, 17)] +
-    [(f'B{n:02d}', 'B') for n in range(1, 17)]
+    [(f'A{n:02d}', 'A') for n in range(1, 45)] +
+    [(f'B{n:02d}', 'B') for n in range(1, 44)] +
+    [(f'Heavy{n:02d}', 'Heavy') for n in range(1, 14)] +
+    [(f'TW{n:02d}', 'TW') for n in range(1, 9)] +
+    [('Artos01', 'Artos')]
 )
 
 TICKETS = [
