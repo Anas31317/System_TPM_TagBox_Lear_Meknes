@@ -44,6 +44,8 @@ def serialize_ticket(row):
         'heure': row['heure_signalement'],
         'statut': row['statut'],
         'priorite': priorite_from_type(row['type_probleme']),
+        'matricule_technicien_assigne': row.get('matricule_technicien_assigne'),
+        'nom_technicien_assigne': row.get('nom_technicien_assigne'),
         'matricule_technicien': row.get('matricule_technicien'),
         'nom_technicien': row.get('nom_technicien'),
         'date_resolution': str(row['date_resolution']) if row.get('date_resolution') else None,
@@ -79,9 +81,12 @@ def list_tickets():
     type_ = request.args.get('type')
 
     # Construire la requête SQL de manière dynamique (où 1=1 permet d'ajouter des AND facilement)
-    query = """SELECT t.*, u.nom AS nom_technicien
+    query = """SELECT t.*,
+                      CONCAT_WS(' ', u_tech.prenom, u_tech.nom)   AS nom_technicien,
+                      CONCAT_WS(' ', u_assigne.prenom, u_assigne.nom) AS nom_technicien_assigne
                FROM tickets t
-               LEFT JOIN utilisateurs u ON t.matricule_technicien = u.matricule
+               LEFT JOIN utilisateurs u_tech    ON t.matricule_technicien         = u_tech.matricule
+               LEFT JOIN utilisateurs u_assigne ON t.matricule_technicien_assigne = u_assigne.matricule
                WHERE 1=1"""
     params = []
 
@@ -216,73 +221,74 @@ def stats():
     return jsonify(total=sum(counts.values()), **counts)
 
 
+SELECT_TICKET_WITH_JOINS = """
+    SELECT t.*,
+           CONCAT_WS(' ', u_tech.prenom, u_tech.nom)    AS nom_technicien,
+           CONCAT_WS(' ', u_assigne.prenom, u_assigne.nom) AS nom_technicien_assigne
+    FROM tickets t
+    LEFT JOIN utilisateurs u_tech    ON t.matricule_technicien         = u_tech.matricule
+    LEFT JOIN utilisateurs u_assigne ON t.matricule_technicien_assigne = u_assigne.matricule
+    WHERE t.id = %s
+"""
+
+
 @tickets_bp.route('/<int:ticket_id>', methods=['PATCH'])
-def resolve_ticket(ticket_id):
+def update_ticket(ticket_id):
     """
-    Marque un ticket comme résolu par un technicien.
+    Met à jour un ticket : assignation ou résolution.
 
-    Request body (optionnel) :
-        {
-            "matricule_technicien": "08823",
-            "action_effectuee": "Vis outil ressérée"  # peut être null/absent
-        }
+    Assignation — body : { "action": "assigner", "matricule_technicien": "08823" }
+        Le technicien se déclare responsable du ticket. Les autres techniciens
+        voient son nom affiché et ne peuvent pas prendre en charge le même ticket.
 
-    Logique :
-    1. Récupère date/heure actuelles du serveur.
-    2. Met à jour le ticket : statut='resolu', matricule_technicien, action_effectuee.
-    3. Récupère le ticket mis à jour (avec le nom du technicien via JOIN).
-    4. Retourne le ticket complet sérialisé.
+    Résolution — body : { "matricule_technicien": "08823", "action_effectuee": "..." }
+        Marque le ticket comme résolu, enregistre date/heure et action.
 
-    Réponse (200) :
-        { "ok": true, "ticket": {...} }
-
-    Erreur (404) :
-        Si le ticket_id n'existe pas.
+    Réponse (200) : { "ok": true, "ticket": {...} }
+    Erreur (404)  : ticket introuvable ou déjà résolu (pour assignation).
     """
-    # Récupérer les données du body (matricule et action optionnels)
     data = request.get_json(silent=True) or {}
+    action = data.get('action')
     matricule_technicien = data.get('matricule_technicien')
-    action_effectuee = data.get('action_effectuee')
-
-    # Capturer la date/heure actuelles du serveur pour tracer la résolution
-    now = datetime.now()
-    date_resolution = now.strftime('%Y-%m-%d')
-    heure_resolution = now.strftime('%H:%M')
 
     conn = get_connection()
     try:
         cur = conn.cursor(dictionary=True)
 
-        # 1. UPDATE : marquer le ticket comme résolu et enregistrer les infos de résolution
-        cur.execute(
-            """UPDATE tickets
-               SET statut = 'resolu',
-                   matricule_technicien = %s,
-                   date_resolution = %s,
-                   heure_resolution = %s,
-                   action_effectuee = %s
-               WHERE id = %s""",
-            (matricule_technicien, date_resolution, heure_resolution, action_effectuee, ticket_id)
-        )
-        conn.commit()
-        updated = cur.rowcount > 0  # rowcount > 0 si une ligne a été modifiée
-
-        # 2. Si la mise à jour a réussi, récupérer le ticket mis à jour avec nom du technicien
-        if updated:
+        if action == 'assigner':
+            # Assigner le ticket à un technicien (sans changer le statut)
             cur.execute(
-                """SELECT t.*, u.nom AS nom_technicien
-                   FROM tickets t
-                   LEFT JOIN utilisateurs u ON t.matricule_technicien = u.matricule
-                   WHERE t.id = %s""",
-                (ticket_id,)
+                """UPDATE tickets SET matricule_technicien_assigne = %s
+                   WHERE id = %s AND statut = 'ouvert'""",
+                (matricule_technicien, ticket_id)
             )
+            conn.commit()
+            updated = cur.rowcount > 0
+        else:
+            # Résoudre le ticket
+            action_effectuee = data.get('action_effectuee')
+            now = datetime.now()
+            cur.execute(
+                """UPDATE tickets
+                   SET statut = 'resolu',
+                       matricule_technicien = %s,
+                       date_resolution = %s,
+                       heure_resolution = %s,
+                       action_effectuee = %s
+                   WHERE id = %s""",
+                (matricule_technicien, now.strftime('%Y-%m-%d'), now.strftime('%H:%M'),
+                 action_effectuee, ticket_id)
+            )
+            conn.commit()
+            updated = cur.rowcount > 0
+
+        if updated:
+            cur.execute(SELECT_TICKET_WITH_JOINS, (ticket_id,))
             row = cur.fetchone()
     finally:
         conn.close()
 
-    # Si le ticket n'a pas été trouvé/mis à jour, retourner 404
     if not updated:
         return jsonify(ok=False), 404
 
-    # Succès : retourner le ticket mis à jour
     return jsonify(ok=True, ticket=serialize_ticket(row))

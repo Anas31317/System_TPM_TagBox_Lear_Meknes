@@ -62,6 +62,10 @@ flowchart LR
 │   └── assets/
 │       ├── app.js                  # Session, traductions FR/AR, horloge, toasts
 │       ├── api.js                  # Client fetch() pour communiquer avec le backend
+│       ├── index.js                # Logique page connexion
+│       ├── operateur.js            # Logique page opérateur
+│       ├── technicien.js           # Logique page technicien
+│       ├── chef_equipe.js          # Logique page chef d'équipe
 │       ├── style.css               # Styles partagés (charte Lear, responsive, RTL)
 │       ├── lear_corporation_logo.png  # Logo Lear (login et favicon)
 │       └── lear_logo.png           # Logo Lear (topbar des pages)
@@ -446,6 +450,42 @@ Puis relancer `python seed.py` pour créer le compte de test chef d'équipe.
 
 ---
 
+## Déploiement en réseau intranet (contexte réel)
+
+### Contexte prévu
+
+- **109 postes opérateurs** — un PC Windows 10 par machine de la zone Cutting, déjà équipés d'un écran et d'applications locales. L'application Tag Box sera intégrée dans l'application existante (bouton de redirection vers `index.html`).
+- **Technicien** — accès depuis son poste habituel via le réseau WiFi intranet.
+- **Chef d'équipe** — accès depuis son PC de bureau Windows standard via le réseau intranet (raccourci, lien ou marque-page navigateur).
+- **Réseau** — WiFi industriel intranet, pas d'accès internet requis.
+- **Serveur central** — un seul serveur héberge Flask + MySQL. Tous les postes s'y connectent via son IP fixe sur le réseau local.
+
+### Modification obligatoire avant déploiement réseau
+
+**Dans `frontend/assets/api.js`** — pour que tous les postes pointent automatiquement vers le bon serveur :
+
+```js
+// Remplacer (ligne 13) :
+const API_BASE = window.TAGBOX_API_BASE || 'http://127.0.0.1:5000/api';
+
+// Par :
+const API_BASE = window.TAGBOX_API_BASE || `http://${window.location.hostname}:5000/api`;
+```
+
+Ainsi, quelle que soit l'IP du serveur, les postes s'y connectent automatiquement à partir du moment où le frontend est servi depuis ce même serveur.
+
+### Architecture réseau
+
+```
+[PC Opérateur A01] ──┐
+[PC Opérateur A02] ──┤
+        ...          ├──→ WiFi intranet ──→ [Serveur central : Flask :5000 + MySQL]
+[PC Technicien]  ────┤
+[PC Chef équipe] ────┘
+```
+
+---
+
 ## Notes avant mise en production (IT)
 
 ### 1. Mode debug Flask
@@ -454,11 +494,13 @@ Actuellement, `debug=True` dans `app.py` :
 - **Avantage** : recharge auto, stack traces détaillées, console interactive.
 - **Inconvénient** : la console interactive Werkzeug est protégée par PIN par défaut (sécurité acceptable), mais la page de debug expose des détails internes.
 
-**À faire en prod** :
+**À faire en prod** — dans `backend/app.py`, remplacer la dernière ligne :
 ```python
-# app.py
-app = Flask(__name__)
-app.config['DEBUG'] = False  # ← Désactiver en prod
+# Développement (actuel)
+app.run(debug=True, host='0.0.0.0', port=5000)
+
+# Production
+app.run(debug=False, host='0.0.0.0', port=5000)
 ```
 
 ### 2. CORS (Cross-Origin Resource Sharing)
@@ -527,6 +569,6 @@ Mettre en place une **stratégie de sauvegarde MySQL** régulière (quotidienne 
 
 ---
 
-**Dernière mise à jour** : Juin 2026
+**Dernière mise à jour** : 30 juin 2026
 
 Développé par : Équipe TPM — Lear Corporation (Meknès)

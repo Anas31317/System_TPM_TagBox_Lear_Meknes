@@ -203,6 +203,11 @@ const TagBoxApp = (function () {
       badgeMai: 'Maintenance',
       badgePro: 'Production',
 
+      // Assignation technicien
+      assignTicket: 'Prendre en charge',
+      assignedByYou: 'Vous gérez ce ticket',
+      assignedBy: 'Pris en charge par',
+
       // Modal de résolution
       resolveModalTitle: 'Marquer comme résolu',
       actionEffectueeLabel: 'Action effectuée (optionnel)',
@@ -331,6 +336,11 @@ const TagBoxApp = (function () {
       badgeSec: 'السلامة',
       badgeMai: 'الصيانة',
       badgePro: 'الإنتاج',
+
+      // Assignation technicien
+      assignTicket: 'تولّ المسؤولية',
+      assignedByYou: 'أنت من يتولى هذا البلاغ',
+      assignedBy: 'تولى المسؤولية',
 
       resolveModalTitle: 'وضع علامة "محلول"',
       actionEffectueeLabel: 'الإجراء المتخذ (اختياري)',

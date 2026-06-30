@@ -93,6 +93,16 @@
       return request(`/tickets${buildQuery({ statut, matricule, type })}`);
     },
 
+    // Assigne un ticket à un technicien (prise en charge)
+    // Le technicien se déclare responsable : son nom s'affiche chez les autres
+    // Retour : { ok: true, ticket: { ... matricule_technicien_assigne, nom_technicien_assigne } }
+    assignTicket(id, matricule_technicien) {
+      return request(`/tickets/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'assigner', matricule_technicien })
+      });
+    },
+
     // Marque un ticket comme résolu par un technicien
     // Paramètres optionnels : matricule_technicien, action_effectuee
     // Retour : { ok: true, ticket: { ... statut: 'resolu', date_resolution, ... } }

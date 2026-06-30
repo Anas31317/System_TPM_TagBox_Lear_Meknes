@@ -10,13 +10,14 @@ from db import get_connection
 load_dotenv()
 
 USERS = [
-    ('04721', 'Opérateur Cutting', 'operateur', '1234'),
-    ('04512', 'Opérateur Cutting', 'operateur', '1234'),
-    ('03187', 'Opérateur Cutting', 'operateur', '1234'),
-    ('05934', 'Opérateur Cutting', 'operateur', '1234'),
-    ('07201', 'Opérateur Cutting', 'operateur', '1234'),
-    ('08823', 'Technicien Cutting', 'technicien', '1234'),
-    ('09456', 'Chef Équipe Cutting', 'chef_equipe', '1234'),
+    # (matricule, prenom, nom, role, password)
+    ('04721', 'Youssef', 'Benali',    'operateur',   '1234'),
+    ('04512', 'Hamid',   'Moussaoui', 'operateur',   '1234'),
+    ('03187', 'Karim',   'Tazi',      'operateur',   '1234'),
+    ('05934', 'Rachid',  'Alami',     'operateur',   '1234'),
+    ('07201', 'Said',    'Chraibi',   'operateur',   '1234'),
+    ('08823', 'Mehdi',   'Benhaddou', 'technicien',  '1234'),
+    ('09456', 'Omar',    'Kettani',   'chef_equipe', '1234'),
 ]
 
 MACHINES = (
@@ -40,12 +41,13 @@ def seed():
     conn = get_connection()
     cur = conn.cursor()
 
-    for matricule, nom, role, password in USERS:
+    for matricule, prenom, nom, role, password in USERS:
         cur.execute(
-            """INSERT INTO utilisateurs (matricule, nom, `role`, mot_de_passe)
-               VALUES (%s, %s, %s, %s)
-               ON DUPLICATE KEY UPDATE nom = VALUES(nom), `role` = VALUES(`role`), mot_de_passe = VALUES(mot_de_passe)""",
-            (matricule, nom, role, generate_password_hash(password))
+            """INSERT INTO utilisateurs (matricule, prenom, nom, `role`, mot_de_passe)
+               VALUES (%s, %s, %s, %s, %s)
+               ON DUPLICATE KEY UPDATE prenom = VALUES(prenom), nom = VALUES(nom),
+                                       `role` = VALUES(`role`), mot_de_passe = VALUES(mot_de_passe)""",
+            (matricule, prenom, nom, role, generate_password_hash(password))
         )
 
     for code, zone in MACHINES:

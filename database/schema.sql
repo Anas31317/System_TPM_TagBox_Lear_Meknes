@@ -12,6 +12,7 @@ USE tagbox_lear;
 -- entouré de backticks partout où il est utilisé dans les requêtes SQL.
 CREATE TABLE IF NOT EXISTS utilisateurs (
   matricule    VARCHAR(6) PRIMARY KEY,
+  prenom       VARCHAR(100) NOT NULL DEFAULT '',
   nom          VARCHAR(100) NOT NULL,
   `role`       ENUM('operateur', 'technicien', 'chef_equipe') NOT NULL,
   mot_de_passe VARCHAR(255) NOT NULL,
@@ -33,12 +34,14 @@ CREATE TABLE IF NOT EXISTS tickets (
   description          TEXT NOT NULL,
   date_signalement     DATE NOT NULL,
   heure_signalement    VARCHAR(5) NOT NULL,
-  statut               ENUM('ouvert', 'resolu') NOT NULL DEFAULT 'ouvert',
-  matricule_technicien VARCHAR(6) DEFAULT NULL,
-  date_resolution      DATE DEFAULT NULL,
-  heure_resolution     VARCHAR(5) DEFAULT NULL,
-  action_effectuee     TEXT DEFAULT NULL,
-  FOREIGN KEY (matricule_operateur) REFERENCES utilisateurs(matricule),
-  FOREIGN KEY (matricule_technicien) REFERENCES utilisateurs(matricule),
-  FOREIGN KEY (machine) REFERENCES machines(code)
+  statut                       ENUM('ouvert', 'resolu') NOT NULL DEFAULT 'ouvert',
+  matricule_technicien_assigne VARCHAR(6) DEFAULT NULL,
+  matricule_technicien         VARCHAR(6) DEFAULT NULL,
+  date_resolution              DATE DEFAULT NULL,
+  heure_resolution             VARCHAR(5) DEFAULT NULL,
+  action_effectuee             TEXT DEFAULT NULL,
+  FOREIGN KEY (matricule_operateur)          REFERENCES utilisateurs(matricule),
+  FOREIGN KEY (matricule_technicien_assigne) REFERENCES utilisateurs(matricule),
+  FOREIGN KEY (matricule_technicien)         REFERENCES utilisateurs(matricule),
+  FOREIGN KEY (machine)                      REFERENCES machines(code)
 );

@@ -262,6 +262,30 @@ button.resolve-btn.done {
   cursor: default !important;
 }
 
+button.assign-btn {
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  border: 1.5px solid var(--color-blue) !important;
+  background: #fff !important;
+  color: var(--color-blue) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-weight: 500 !important;
+}
+button.assign-btn:hover { background: #EEF2F9 !important; }
+
+.badge-assigned-me {
+  font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+  background: var(--color-green-light); color: var(--color-green); white-space: nowrap;
+}
+.badge-assigned-other {
+  font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+  background: #F3F1EC; color: #888; white-space: nowrap;
+}
+
 .empty-note { font-size: 13px; color: #aaa; text-align: center; padding: 2rem; }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-green); display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }

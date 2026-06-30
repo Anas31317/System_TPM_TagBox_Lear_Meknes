@@ -52,7 +52,7 @@ def login():
     try:
         cur = conn.cursor(dictionary=True)  # dictionary=True : résultat en dict au lieu de tuple
         cur.execute(
-            "SELECT matricule, nom, `role`, mot_de_passe FROM utilisateurs WHERE matricule = %s",
+            "SELECT matricule, prenom, nom, `role`, mot_de_passe FROM utilisateurs WHERE matricule = %s",
             (matricule,)
         )
         user = cur.fetchone()
@@ -67,6 +67,7 @@ def login():
     # Succès : retourner les données de l'utilisateur (sans le mot de passe!)
     return jsonify(ok=True, user={
         'matricule': user['matricule'],
+        'prenom': user['prenom'],
         'nom': user['nom'],
         'role': user['role'],
     })
