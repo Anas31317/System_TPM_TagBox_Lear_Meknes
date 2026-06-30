@@ -42,11 +42,11 @@ html, body { background: var(--color-bg); }
   align-items: center;
   justify-content: space-between;
 }
-.logo { display: flex; align-items: center; gap: 10px; }
-.logo-img { height: 28px; width: auto; }
+.logo { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; }
+.logo-img { height: 28px; width: auto; flex-shrink: 0; }
 .logo-name { font-size: 15px; font-weight: 500; color: var(--lear-red); }
-.logo-pipe { color: #CCC; margin: 0 4px; }
-.logo-sub { font-size: 13px; color: #999; }
+.logo-pipe { color: #CCC; margin: 0 4px; flex-shrink: 0; }
+.logo-sub { font-size: 13px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 .clock-badge {
@@ -120,7 +120,8 @@ button.logout-btn:hover { border-color: var(--lear-red) !important; color: var(-
 .field-error.visible { display: block; }
 .field input.invalid, .field select.invalid { border-color: var(--lear-red); }
 
-.date-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.date-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+.date-time-row > * { min-width: 0; }
 .readonly-field {
   background: #F3F1EC; border: 0.5px solid var(--color-border-strong); border-radius: 8px;
   padding: 10px 12px; font-size: 14px; color: #555; font-variant-numeric: tabular-nums;
@@ -406,7 +407,21 @@ button.btn-export:hover { border-color: var(--lear-red) !important; color: var(-
   .ticket { grid-template-columns: auto 1fr; }
   .ticket-right { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 4px; }
   .topbar .user-info span:not(.role-badge) { display: none; }
+  .topbar .logout-btn span { display: none; }
+  button.logout-btn { padding: 6px 10px !important; }
   .analytics-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0 0.75rem; }
+  .topbar-right { gap: 6px; }
+  .clock-badge span { display: none; }
+  button.lang-btn span { display: none; }
+  button.lang-btn { padding: 7px 10px !important; }
+}
+
+@media (max-width: 420px) {
+  .date-time-row { grid-template-columns: 1fr; }
 }
 
 .sr-only {
