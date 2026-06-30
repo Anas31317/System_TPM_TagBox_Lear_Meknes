@@ -571,4 +571,4 @@ Mettre en place une **stratégie de sauvegarde MySQL** régulière (quotidienne 
 
 **Dernière mise à jour** : 30 juin 2026
 
-Développé par : Équipe TPM — Lear Corporation (Meknès)
+Développé par : Anas HADOUCHE — Stagiaire Lear Corporation (Meknès)

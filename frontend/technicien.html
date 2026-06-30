@@ -1,4 +1,27 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  Tag Box Lear — Interface Technicien (technicien.html)
+
+  Rôle : Tableau de bord du technicien de maintenance.
+         Affiche tous les tickets en temps réel (rafraîchissement 15s).
+         Permet de prendre en charge un ticket (assignation) puis de
+         le résoudre avec description de l'action effectuée.
+
+  Onglets :
+    1. Tickets en cours — tickets ouverts, filtres par type
+    2. Tickets résolus  — historique filtrable par date
+
+  Logique JS  : assets/technicien.js
+  Commun JS   : assets/app.js (session, traductions), assets/api.js (HTTP)
+  Styles      : assets/style.css
+
+  Convention IDs :
+    id="t-*"        → texte mis à jour dynamiquement (traductions FR/AR)
+    id="count-*"    → valeurs des compteurs statistiques (mis à jour par refreshStats)
+    id="ticket-list-*" → conteneurs remplis dynamiquement par renderTicketList()
+  ============================================================
+-->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -10,6 +33,7 @@
 </head>
 <body>
 
+<!-- Titre masqué visuellement mais lu par les lecteurs d'écran (accessibilité) -->
 <h2 class="sr-only">Tag Box — Interface Technicien — Lear Corporation</h2>
 
 <div class="app" id="app">
@@ -115,7 +139,10 @@
   </div>
 </div>
 
-<!-- ============ Modal : résolution d'un ticket ============ -->
+<!-- ============ Modal : résolution d'un ticket ============
+     Masquée par défaut (display:none via CSS).
+     Affichée via openResolveModal() quand le technicien clique "Résoudre".
+     Bloque le rafraîchissement automatique tant qu'elle est ouverte. -->
 <div class="modal-overlay" id="resolve-modal-overlay">
   <div class="modal">
     <h3 class="modal-title" id="modal-title">Marquer comme résolu</h3>
@@ -130,6 +157,8 @@
   </div>
 </div>
 
+<!-- Ordre de chargement obligatoire : app.js et api.js exposent TagBoxApp et TagBoxAPI
+     que technicien.js utilise immédiatement à son chargement -->
 <script src="assets/app.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/technicien.js"></script>

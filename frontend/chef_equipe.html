@@ -1,4 +1,30 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  Tag Box Lear — Interface Chef d'équipe (chef_equipe.html)
+
+  Rôle : Tableau de bord de supervision en lecture seule.
+         Le chef d'équipe consulte les tickets, l'historique
+         et les analyses statistiques pour alimenter le plan
+         d'action TPM (certification JIPM Silver).
+
+  Onglets :
+    1. Tickets en cours — vue globale (aucune action possible)
+    2. Tickets résolus  — historique filtrable + export CSV
+    3. Analyse          — graphiques + tableaux statistiques
+
+  Logique JS  : assets/chef_equipe.js
+  Commun JS   : assets/app.js, assets/api.js
+  Graphiques  : Chart.js (chargé via CDN ci-dessous)
+  Styles      : assets/style.css
+
+  Convention IDs :
+    id="t-*"     → texte mis à jour dynamiquement (traductions FR/AR)
+    id="count-*" → compteurs statistiques (mis à jour par refreshStats)
+    id="chart-*" → canvas Chart.js (Évolution et Répartition)
+    id="table-*" → tableaux analytiques (Machines et Techniciens)
+  ============================================================
+-->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -183,6 +209,9 @@
   </div>
 </div>
 
+<!-- Ordre de chargement obligatoire : app.js et api.js exposent TagBoxApp et TagBoxAPI
+     que chef_equipe.js utilise immédiatement à son chargement.
+     Chart.js est chargé dans le <head> car chef_equipe.js y accède à l'initialisation. -->
 <script src="assets/app.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/chef_equipe.js"></script>

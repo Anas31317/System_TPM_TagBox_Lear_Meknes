@@ -1,4 +1,22 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  Tag Box Lear — Page de connexion (index.html)
+
+  Rôle : Point d'entrée de l'application. Connexion en 2 étapes :
+         1. Sélection du profil (opérateur / technicien / chef d'équipe)
+         2. Saisie du matricule + mot de passe
+
+  Logique JS  : assets/index.js
+  Commun JS   : assets/app.js (session, traductions), assets/api.js (HTTP)
+  Styles      : assets/style.css
+
+  Convention IDs :
+    id="t-*"    → texte mis à jour dynamiquement par JS (traductions FR/AR)
+    id="i-*"    → champs de saisie (input, select, textarea)
+    id="err-*"  → messages d'erreur sous les champs (masqués par défaut)
+  ============================================================
+-->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -84,6 +102,8 @@
   </div>
 </div>
 
+<!-- Ordre de chargement obligatoire : app.js et api.js exposent TagBoxApp et TagBoxAPI
+     que index.js utilise immédiatement à son chargement -->
 <script src="assets/app.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/index.js"></script>

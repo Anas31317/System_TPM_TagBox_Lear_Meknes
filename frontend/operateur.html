@@ -1,4 +1,26 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  Tag Box Lear — Interface Opérateur (operateur.html)
+
+  Rôle : Écran tactile posté sur chaque machine de la zone Cutting.
+         Permet à l'opérateur de signaler une anomalie et de
+         consulter son historique de signalements.
+
+  Onglets :
+    1. Nouveau signalement — formulaire de création de ticket
+    2. Mes signalements   — historique filtrable par date
+
+  Logique JS  : assets/operateur.js
+  Commun JS   : assets/app.js (session, traductions), assets/api.js (HTTP)
+  Styles      : assets/style.css
+
+  Convention IDs :
+    id="t-*"    → texte mis à jour dynamiquement par JS (traductions FR/AR)
+    id="i-*"    → champs de saisie (input, select, textarea)
+    id="err-*"  → messages d'erreur sous les champs (masqués par défaut)
+  ============================================================
+-->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -10,9 +32,12 @@
 </head>
 <body>
 
+<!-- Titre masqué visuellement mais lu par les lecteurs d'écran (accessibilité) -->
 <h2 class="sr-only">Tag Box — Interface Opérateur — Lear Corporation</h2>
 
 <div class="app" id="app">
+
+  <!-- ============ TOPBAR ============ -->
   <div class="topbar">
     <div class="logo">
       <img src="assets/lear_logo.png" alt="Lear Corporation" class="logo-img" />
@@ -21,7 +46,9 @@
     </div>
     <div class="topbar-right">
       <div class="user-info">
+        <!-- aria-hidden : icône décorative, ignorée par les lecteurs d'écran -->
         <i class="ti ti-user" aria-hidden="true" style="font-size:14px;"></i>
+        <!-- Rempli par JS avec : matricule — Prénom Nom -->
         <span id="user-matricule-label">Matricule : <strong>—</strong></span>
         <span class="role-badge" id="role-badge">Opérateur</span>
       </div>
@@ -31,6 +58,7 @@
       </button>
       <div class="clock-badge">
         <i class="ti ti-clock" aria-hidden="true" style="font-size:14px; color:#C8102E;"></i>
+        <!-- Mis à jour toutes les secondes par JS (TagBoxApp.startClock) -->
         <span id="live-clock">--:--:--</span>
       </div>
       <button class="logout-btn" onclick="TagBoxApp.logout()">
@@ -40,6 +68,7 @@
     </div>
   </div>
 
+  <!-- ============ ONGLETS ============ -->
   <div style="background:#fff; border-bottom: 0.5px solid #E0DDD5;">
     <div class="nav-tabs">
       <div class="nav-tab active" id="tab-new" onclick="showTab('new')">Nouveau signalement</div>
@@ -53,14 +82,18 @@
     <p class="page-sub" id="t-sub">Remplissez les informations ci-dessous. Le technicien sera notifié automatiquement.</p>
 
     <div class="card">
+      <!-- novalidate : désactive la validation HTML native ; la validation est gérée par JS -->
       <form id="ticket-form" novalidate>
+
         <div class="field">
           <label id="t-matricule">Matricule opérateur</label>
+          <!-- inputmode="numeric" : affiche le clavier numérique sur mobile/tablette -->
           <input type="text" id="i-matricule" inputmode="numeric" placeholder="Ex : 04721" maxlength="6" />
         </div>
 
         <div class="field">
           <label id="t-machine">Machine / Poste</label>
+          <!-- Les <optgroup> sont générés dynamiquement par buildMachineOptions() dans operateur.js -->
           <select id="i-machine">
             <option value="" id="t-select-default">— Sélectionner —</option>
           </select>
@@ -71,6 +104,7 @@
           <label id="t-date">Date et heure du signalement</label>
           <div class="date-time-row">
             <input type="date" id="date-input" />
+            <!-- Champ lecture seule : affiche l'heure en temps réel (mis à jour chaque seconde) -->
             <div class="readonly-field" id="time-display">--:--:--</div>
           </div>
           <p style="font-size:11px; color:#aaa; margin-top:5px;" id="t-date-note">L'heure est enregistrée automatiquement à l'envoi.</p>
@@ -80,6 +114,7 @@
 
         <div class="field">
           <label id="t-type">Type de problème</label>
+          <!-- data-type : valeur lue par selectType() pour identifier le type sélectionné -->
           <div class="type-grid">
             <div class="type-btn type-securite" data-type="sec" onclick="selectType(this)">
               <i class="ti ti-shield-exclamation" aria-hidden="true"></i>
@@ -110,6 +145,7 @@
           <i class="ti ti-send" aria-hidden="true" style="font-size:16px;"></i>
           <span id="t-submit-text">Envoyer le signalement</span>
         </button>
+
       </form>
     </div>
   </div>
@@ -119,6 +155,7 @@
     <p class="page-title" id="t-my-title">Mes signalements</p>
     <p class="page-sub" id="t-my-sub">Historique de vos signalements et leur statut.</p>
 
+    <!-- Sélecteur de plage de dates (défaut : 7 derniers jours, initialisé par JS) -->
     <div class="date-range-selector" style="margin-bottom: 1rem;">
       <label id="t-date-from" for="my-tickets-date-from">De</label>
       <input type="date" id="my-tickets-date-from" />
@@ -126,15 +163,15 @@
       <input type="date" id="my-tickets-date-to" />
     </div>
 
-    <div class="ticket-list" id="my-ticket-list">
-      <!-- généré dynamiquement -->
-    </div>
+    <!-- Contenu généré dynamiquement par loadMyTickets() dans operateur.js -->
+    <div class="ticket-list" id="my-ticket-list"></div>
     <p class="empty-note" id="my-empty" style="display:none;"></p>
   </div>
+
 </div>
 
-<script src="assets/app.js"></script>
-<script src="assets/api.js"></script>
+<!-- Ordre de chargement obligatoire : app.js et api.js exposent TagBoxApp et TagBoxAPI
+     que operateur.js utilise immédiatement à son chargement -->
 <script src="assets/app.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/operateur.js"></script>
